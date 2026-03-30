@@ -110,7 +110,8 @@ export default function CommandPortal() {
 
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#002868]"><Loader2 className="animate-spin text-[#FFC72C] w-12 h-12" /></div>;
   if (!session) return <LoginScreen />;
-
+  
+{/* images for the header */}
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       <header className="bg-[#002868] text-white p-4 shadow-2xl flex justify-between items-center px-4 sm:px-10 border-b-4 border-[#FFC72C] sticky top-0 z-50">
@@ -118,8 +119,8 @@ export default function CommandPortal() {
           <img src="/imm_badge.png" alt="Immigration Badge" className="h-10 sm:h-12 w-auto" />
           {/* Placeholders for two additional images */}
           <div className="flex gap-2">
-  <img src="/nir_logo.png" alt="NIR Logo" className="h-10 sm:h-12 w-auto" />
-  <img src="/lrrrc_logo.png" alt="LRRRC Logo" className="h-10 sm:h-12 w-auto" />
+  <img src="/nir_logo.png" alt="NIR Logo" className="h-10 sm:h-12 w-auto object-contain" />
+<img src="/lrrrc_logo.png" alt="LRRRC Logo" className="h-10 sm:h-12 w-auto object-contain" />
 </div>
           <div>
             <h1 className="font-black text-xl sm:text-2xl leading-none tracking-tighter">RIMS PORTAL</h1>
@@ -147,10 +148,11 @@ function Dashboard({ setView, totalRecords, pendingSync }: any) {
        <div className="bg-white rounded-2xl sm:rounded-[3.5rem] p-6 sm:p-14 shadow-2xl flex flex-col sm:flex-row items-center justify-between border border-slate-50 gap-8">
           <div className="flex items-center gap-6 sm:gap-12 flex-wrap justify-center">
             <img src="/imm_badge.png" alt="Immigration Badge" className="w-24 sm:w-32 h-auto" />
+            
             {/* Placeholders for two additional images */}
-            <div className="flex gap-3">
-  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 1</div>
-  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 2</div>
+         <div className="flex gap-3">
+  <img src="/nir_logo.png?v=1" alt="NIR Logo" className="w-24 sm:w-32 h-auto object-contain" />
+<img src="/lrrrc_logo.png?v=1" alt="LRRRC Logo" className="w-24 sm:w-32 h-auto object-contain" />
 </div>
             <div className="text-center sm:text-left">
               <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
