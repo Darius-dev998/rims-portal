@@ -115,7 +115,7 @@ export default function CommandPortal() {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       <header className="bg-[#002868] text-white p-4 shadow-2xl flex justify-between items-center px-4 sm:px-10 border-b-4 border-[#FFC72C] sticky top-0 z-50">
-        <div className="flex items-center gap-3 sm:gap-5">
+        <div className="flex items-center gap-3 sm:gap-1">
           <img src="/imm_badge.png" alt="Immigration Badge" className="h-10 sm:h-12 w-auto" />
           {/* Placeholders for two additional images */}
           <div className="flex gap-2">
@@ -146,13 +146,13 @@ function Dashboard({ setView, totalRecords, pendingSync }: any) {
   return (
     <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-700">
        <div className="bg-white rounded-2xl sm:rounded-[3.5rem] p-6 sm:p-14 shadow-2xl flex flex-col sm:flex-row items-center justify-between border border-slate-50 gap-8">
-          <div className="flex items-center gap-6 sm:gap-12 flex-wrap justify-center">
+          <div className="flex items-center gap-5 sm:gap-1 flex-wrap justify-left">
             <img src="/imm_badge.png" alt="Immigration Badge" className="w-24 sm:w-32 h-auto" />
             
             {/* Placeholders for two additional images */}
          <div className="flex gap-3">
-  <img src="/nir_logo.png?v=1" alt="NIR Logo" className="w-24 sm:w-32 h-auto object-contain" />
-<img src="/lrrrc_logo.png?v=1" alt="LRRRC Logo" className="w-24 sm:w-32 h-auto object-contain" />
+  <img src="/nid_logo.png?v=1" alt="NIR Logo" className="w-24 sm:w-32 h-auto object-contain" />
+<img src="/ref_logo.png?v=1" alt="LRRRC Logo" className="w-24 sm:w-32 h-auto object-contain" />
 </div>
             <div className="text-center sm:text-left">
               <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
@@ -300,7 +300,7 @@ function SearchPortal({ setView, onSelectRecord }: any) {
   return (
     <div className="space-y-8 sm:space-y-10 animate-in slide-in-from-right-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-4xl sm:text-6xl font-black text-[#002868] tracking-tighter uppercase">National Registry</h2>
+        <h2 className="text-4xl sm:text-6xl font-black text-[#002868] tracking-tighter uppercase">Refugee Registry</h2>
         <div className="flex gap-3">
           <button
             onClick={exportToCSV}
