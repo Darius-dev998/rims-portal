@@ -39,7 +39,7 @@ export default function CommandPortal() {
       if (session) {
         // ROLE CHECK: only allow specific emails – CHANGE THESE TO YOUR MINISTER'S EMAIL(S)
         const authorizedEmails = ['minister@example.com', 'admin@liberia.gov']; // UPDATE THIS
-        if (!authorizedEmails.includes(session.user.email)) {
+       if (!session.user.email || !authorizedEmails.includes(session.user.email)) {
           toast.error('You are not authorized to access this portal.');
           supabase.auth.signOut();
         } else {
