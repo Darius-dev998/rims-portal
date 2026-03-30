@@ -1,65 +1,812 @@
-import Image from "next/image";
+'use client';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import toast from 'react-hot-toast';
+import { 
+  Fingerprint, Search, LogOut, ShieldCheck, MapPin, Loader2, CheckCircle2, 
+  Database, Users, UserPlus, X, ChevronRight, Camera, Package, Calendar, 
+  Hash, User, Info, RefreshCw, AlertCircle, Globe, Map as MapIcon, ChevronDown, Download
+} from 'lucide-react';
+import { 
+  COUNTIES, REASON_OPTIONS, RELIEF_OPTIONS, GENDER_OPTIONS, 
+  DISTRICTS_BY_COUNTY, PROGRAM_TYPE_OPTIONS, CATEGORY_OPTIONS, 
+  TRAVEL_DOC_OPTIONS, ALL_NATIONALITIES, ALL_DISTRICTS 
+} from '@/lib/constants';
 
-export default function Home() {
+export default function CommandPortal() {
+  const [session, setSession] = useState<any>(null);
+  const [view, setView] = useState<'dashboard' | 'search' | 'enroll'>('dashboard');
+  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [pendingSync, setPendingSync] = useState(0);
+
+  const [draft, setDraft] = useState({
+    firstName: '', lastName: '', programType: '', category: '',
+    reliefAssistance: [] as string[], otherRelief: '',
+    gender: '', nationality: '', countryOfOrigin: '', dob: '',
+    county: '', district: '', town: '', phone: '', email: '',
+    docType: '', docNumber: '', docIssueDate: '', docExpiryDate: '',
+    reason: '', photo: null as any, lat: null as number | null, lng: null as number | null
+  });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+      if (session) {
+        // ROLE CHECK: only allow specific emails – CHANGE THESE TO YOUR MINISTER'S EMAIL(S)
+        const authorizedEmails = ['minister@example.com', 'admin@liberia.gov']; // UPDATE THIS
+        if (!authorizedEmails.includes(session.user.email)) {
+          toast.error('You are not authorized to access this portal.');
+          supabase.auth.signOut();
+        } else {
+          fetchMetrics();
+        }
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchMetrics();
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchMetrics = async () => {
+    const { count: total } = await supabase.from('immigrants').select('*', { count: 'exact', head: true });
+    const { count: pending } = await supabase.from('immigrants').select('*', { count: 'exact', head: true }).eq('sync_status', 'PENDING');
+    setTotalRecords(total || 0);
+    setPendingSync(pending || 0);
+  };
+
+  const saveToSupabase = async () => {
+    setIsSaving(true);
+    const govId = `LRS-${Math.random().toString(36).substring(2, 8).toUpperCase()}${Date.now() % 1000}`;
+    let relief = draft.reliefAssistance.filter(i => i !== 'Others').join(', ');
+    if (draft.reliefAssistance.includes('Others') && draft.otherRelief) {
+        relief = relief ? `${relief}, ${draft.otherRelief}` : draft.otherRelief;
+    }
+
+    const { error } = await supabase.from('immigrants').insert([{
+      id: crypto.randomUUID(),
+      unique_id: govId,
+      first_name: draft.firstName,
+      last_name: draft.lastName,
+      program_type: draft.programType,
+      category: draft.category,
+      relief_assistance: relief,
+      gender: draft.gender,
+      nationality: draft.nationality,
+      country_of_origin: draft.countryOfOrigin,
+      date_of_birth: draft.dob ? new Date(draft.dob).getTime() : null,
+      county_of_residence: draft.county,
+      district_of_residence: draft.district,
+      town_or_village: draft.town,
+      phone_number: draft.phone,
+      email_address: draft.email,
+      travel_document_type: draft.docType,
+      travel_document_number: draft.docNumber,
+      date_of_issue: draft.docIssueDate ? new Date(draft.docIssueDate).getTime() : null,
+      date_of_expiry: draft.docExpiryDate ? new Date(draft.docExpiryDate).getTime() : null,
+      reason_for_migration: draft.reason,
+      gps_latitude: draft.lat,
+      gps_longitude: draft.lng,
+      registration_timestamp: Date.now(),
+      registered_by_agent_id: session?.user?.id,
+      sync_status: 'SYNCED'
+    }]);
+
+    if (!error) {
+      toast.success(`Recorded successfully: ID ${govId}`);
+      setView('dashboard');
+      setStep(1);
+      setDraft({ firstName: '', lastName: '', programType: '', category: '', reliefAssistance: [], otherRelief: '', gender: '', nationality: '', countryOfOrigin: '', dob: '', county: '', district: '', town: '', phone: '', email: '', docType: '', docNumber: '', docIssueDate: '', docExpiryDate: '', reason: '', photo: null, lat: null, lng: null });
+      fetchMetrics();
+    } else toast.error(error.message);
+    setIsSaving(false);
+  };
+
+  if (loading) return <div className="h-screen flex items-center justify-center bg-[#002868]"><Loader2 className="animate-spin text-[#FFC72C] w-12 h-12" /></div>;
+  if (!session) return <LoginScreen />;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
+      <header className="bg-[#002868] text-white p-4 shadow-2xl flex justify-between items-center px-4 sm:px-10 border-b-4 border-[#FFC72C] sticky top-0 z-50">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <img src="/imm_badge.png" alt="Immigration Badge" className="h-10 sm:h-12 w-auto" />
+          {/* Placeholders for two additional images */}
+          <div className="flex gap-2">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white/50 text-xs">Img1</div>
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white/50 text-xs">Img2</div>
+          </div>
+          <div>
+            <h1 className="font-black text-xl sm:text-2xl leading-none tracking-tighter">RIMS PORTAL</h1>
+            <p className="text-[8px] sm:text-[10px] font-bold text-[#FFC72C] tracking-[0.2em] uppercase">Republic of Liberia</p>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        <button onClick={() => supabase.auth.signOut()} className="bg-red-500/10 hover:bg-red-600 px-4 sm:px-6 py-2 rounded-xl transition-all font-black text-xs border border-red-500/20">LOGOUT</button>
+      </header>
+
+      <main className="flex-1 p-4 sm:p-10 max-w-7xl mx-auto w-full">
+        {view === 'dashboard' && <Dashboard setView={setView} totalRecords={totalRecords} pendingSync={pendingSync} />}
+        {view === 'search' && <SearchPortal setView={setView} onSelectRecord={(r: any) => setSelectedRecord(r)} />}
+        {view === 'enroll' && <EnrollmentWizard step={step} setStep={setStep} draft={draft} setDraft={setDraft} onCancel={() => setView('dashboard')} onFinalize={saveToSupabase} isSaving={isSaving} />}
       </main>
+
+      {selectedRecord && <ProfileDialog record={selectedRecord} onClose={() => setSelectedRecord(null)} />}
+    </div>
+  );
+}
+
+// ── DASHBOARD ──
+function Dashboard({ setView, totalRecords, pendingSync }: any) {
+  return (
+    <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-700">
+       <div className="bg-white rounded-2xl sm:rounded-[3.5rem] p-6 sm:p-14 shadow-2xl flex flex-col sm:flex-row items-center justify-between border border-slate-50 gap-8">
+          <div className="flex items-center gap-6 sm:gap-12 flex-wrap justify-center">
+            <img src="/imm_badge.png" alt="Immigration Badge" className="w-24 sm:w-32 h-auto" />
+            {/* Placeholders for two additional images */}
+            <div className="flex gap-3">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 1</div>
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 2</div>
+            </div>
+            <div className="text-center sm:text-left">
+              <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
+              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Authorized Access</h2>
+              <p className="text-slate-400 font-bold text-sm sm:text-base mt-3 flex items-center justify-center sm:justify-start gap-2"><MapPin size={16}/> Republic of Liberia • LRRRC</p>
+            </div>
+          </div>
+          <div className="bg-slate-50 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] text-center border border-slate-100 shadow-inner w-full sm:w-auto">
+             <p className="text-4xl sm:text-6xl font-black text-[#002868] leading-none tracking-tighter italic">{totalRecords}</p>
+             <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest mt-2">Total Enrolled</p>
+             <hr className="my-2 border-slate-200" />
+             <p className="text-xl sm:text-2xl font-black text-[#002868]">{pendingSync}</p>
+             <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Pending Sync</p>
+          </div>
+       </div>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
+          <ActionTile title="Enroll Refugee" desc="Initialize full biographical and biometric capture workflow." icon={<UserPlus size={56}/>} color="bg-[#1B5E20]" onClick={() => setView('enroll')} />
+          <ActionTile title="Refugee Search" desc="Advanced forensic query of national records with sub-second latency." icon={<Search size={56}/>} color="bg-[#002868]" onClick={() => setView('search')} />
+       </div>
+    </div>
+  );
+}
+
+// ── SEARCH PORTAL (manual search) ──
+// ── SEARCH PORTAL (manual search, custom dropdowns, consistent heights) ──
+function SearchPortal({ setView, onSelectRecord }: any) {
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 20;
+
+  const [filters, setFilters] = useState({
+    query: '', uniqueId: '', county: '', district: '', nationality: '', gender: '', reason: '', docType: '', town: '', agentId: '', relief: ''
+  });
+
+  const [searchTrigger, setSearchTrigger] = useState(0);
+
+  const buildQuery = () => {
+    let q = supabase.from('immigrants').select('*', { count: 'exact' });
+    if (filters.query) q = q.or(`first_name.ilike.%${filters.query}%,last_name.ilike.%${filters.query}%`);
+    if (filters.uniqueId) q = q.ilike('unique_id', `%${filters.uniqueId}%`);
+    if (filters.county) q = q.eq('county_of_residence', filters.county);
+    if (filters.district) q = q.eq('district_of_residence', filters.district);
+    if (filters.nationality) q = q.eq('nationality', filters.nationality);
+    if (filters.gender) q = q.eq('gender', filters.gender);
+    if (filters.reason) q = q.eq('reason_for_migration', filters.reason);
+    if (filters.docType) q = q.eq('travel_document_type', filters.docType);
+    if (filters.town) q = q.ilike('town_or_village', `%${filters.town}%`);
+    if (filters.agentId) q = q.ilike('registered_by_agent_id', `%${filters.agentId}%`);
+    if (filters.relief) q = q.ilike('relief_assistance', `%${filters.relief}%`);
+    return q;
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const q = buildQuery();
+      const { data, count, error } = await q
+        .order('registration_timestamp', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1);
+      if (error) throw error;
+      setResults(data || []);
+      setTotalCount(count || 0);
+    } catch (err) {
+      console.error('Search error:', err);
+      toast.error('Failed to fetch records');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [searchTrigger, page]);
+
+  const handleSearch = () => {
+    setPage(1);
+    setSearchTrigger(prev => prev + 1);
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      query: '', uniqueId: '', county: '', district: '', nationality: '', gender: '', reason: '', docType: '', town: '', agentId: '', relief: ''
+    });
+    setPage(1);
+    setSearchTrigger(prev => prev + 1);
+  };
+
+  const exportToCSV = async () => {
+    const toastId = toast.loading('Fetching data for export...');
+    try {
+      let allData: any[] = [];
+      let offset = 0;
+      const limit = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        let q = supabase.from('immigrants').select('*');
+        if (filters.query) q = q.or(`first_name.ilike.%${filters.query}%,last_name.ilike.%${filters.query}%`);
+        if (filters.uniqueId) q = q.ilike('unique_id', `%${filters.uniqueId}%`);
+        if (filters.county) q = q.eq('county_of_residence', filters.county);
+        if (filters.district) q = q.eq('district_of_residence', filters.district);
+        if (filters.nationality) q = q.eq('nationality', filters.nationality);
+        if (filters.gender) q = q.eq('gender', filters.gender);
+        if (filters.reason) q = q.eq('reason_for_migration', filters.reason);
+        if (filters.docType) q = q.eq('travel_document_type', filters.docType);
+        if (filters.town) q = q.ilike('town_or_village', `%${filters.town}%`);
+        if (filters.agentId) q = q.ilike('registered_by_agent_id', `%${filters.agentId}%`);
+        if (filters.relief) q = q.ilike('relief_assistance', `%${filters.relief}%`);
+
+        const { data, error } = await q
+          .order('registration_timestamp', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        offset += limit;
+        if (data.length < limit) hasMore = false;
+      }
+
+      if (allData.length === 0) {
+        toast.error('No data to export', { id: toastId });
+        return;
+      }
+
+      const headers = Object.keys(allData[0]);
+      const rows = allData.map(row => headers.map(header => JSON.stringify(row[header] || '')).join(','));
+      const csv = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'refugee_records.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`${allData.length} records exported`, { id: toastId });
+    } catch (err) {
+      console.error(err);
+      toast.error('Export failed', { id: toastId });
+    }
+  };
+
+  return (
+    <div className="space-y-8 sm:space-y-10 animate-in slide-in-from-right-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <h2 className="text-4xl sm:text-6xl font-black text-[#002868] tracking-tighter uppercase">National Registry</h2>
+        <div className="flex gap-3">
+          <button
+            onClick={exportToCSV}
+            className="font-black text-[#002868] bg-[#FFC72C] px-5 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-lg uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2"
+          >
+            <Download size={16}/> Export CSV
+          </button>
+          <button onClick={() => setView('dashboard')} className="font-black text-[#002868] bg-[#FFC72C] px-5 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-lg uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2">← Dashboard</button>
+        </div>
+      </div>
+
+      <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-4 sm:space-y-6">
+         {/* Search input – height matched to filter cards */}
+         <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
+            <input
+              value={filters.query}
+              onChange={(e) => setFilters({...filters, query: e.target.value})}
+              placeholder="Forensic Name Search..."
+              className="w-full pl-12 pr-4 p-4 sm:p-6 bg-slate-50 rounded-2xl font-bold outline-none border border-slate-100 focus:ring-4 ring-[#002868]/5 transition-all text-sm sm:text-base"
+            />
+         </div>
+
+         {/* First row: County, District, Nationality, Relief */}
+         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">County</span>
+              <CustomDropdown
+                options={COUNTIES}
+                value={filters.county}
+                onChange={(v: string) => setFilters({...filters, county: v, district: ''})}
+                placeholder="County"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">District</span>
+              <CustomDropdown
+                options={DISTRICTS_BY_COUNTY[filters.county] || ALL_DISTRICTS}
+                value={filters.district}
+                onChange={(v: string) => setFilters({...filters, district: v})}
+                placeholder="District"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Nationality</span>
+              <CustomDropdown
+                options={ALL_NATIONALITIES}
+                value={filters.nationality}
+                onChange={(v: string) => setFilters({...filters, nationality: v})}
+                placeholder="Nationality"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Relief</span>
+              <CustomDropdown
+                options={RELIEF_OPTIONS}
+                value={filters.relief}
+                onChange={(v: string) => setFilters({...filters, relief: v})}
+                placeholder="Relief"
+              />
+            </div>
+         </div>
+
+         {/* Second row: ID Number, Town, Gender, Agent ID */}
+         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <FormInput label="ID Number" value={filters.uniqueId} onChange={(v:any) => setFilters({...filters, uniqueId: v})} />
+            <FormInput label="Town" value={filters.town} onChange={(v:any) => setFilters({...filters, town: v})} />
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Gender</span>
+              <CustomDropdown
+                options={GENDER_OPTIONS}
+                value={filters.gender}
+                onChange={(v: string) => setFilters({...filters, gender: v})}
+                placeholder="Gender"
+              />
+            </div>
+            <FormInput label="Agent ID" value={filters.agentId} onChange={(v:any) => setFilters({...filters, agentId: v})} />
+         </div>
+
+         {/* Third row: Reason, Document Type, and buttons */}
+         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Reason</span>
+              <CustomDropdown
+                options={REASON_OPTIONS}
+                value={filters.reason}
+                onChange={(v: string) => setFilters({...filters, reason: v})}
+                placeholder="Reason"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Document Type</span>
+              <CustomDropdown
+                options={TRAVEL_DOC_OPTIONS}
+                value={filters.docType}
+                onChange={(v: string) => setFilters({...filters, docType: v})}
+                placeholder="Document Type"
+              />
+            </div>
+            <div className="col-span-2 flex justify-end gap-3">
+              <button
+                onClick={clearFilters}
+                className="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all"
+              >
+                Clear All Filters
+              </button>
+              <button
+                onClick={handleSearch}
+                className="bg-[#002868] text-white px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#001a4f] transition-all flex items-center gap-2"
+              >
+                <Search size={14}/> Search
+              </button>
+            </div>
+         </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="animate-spin text-lib-blue w-10 h-10" /></div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left min-w-[600px]">
+              <thead className="bg-[#002868] text-xs sm:text-sm font-black uppercase text-white/40 border-b tracking-[0.3em]">
+                  <tr>
+                    <th className="p-4 sm:p-10">Registry Identity</th>
+                    <th className="p-4 sm:p-10">Location</th>
+                    <th className="p-4 sm:p-10 text-center">Relief Status</th>
+                    <th className="p-4 sm:p-10 text-right">Biometric Status</th>
+                  </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {results.map((item) => (
+                  <tr key={item.id} onClick={() => onSelectRecord(item)} className="hover:bg-slate-50 transition-all group cursor-pointer">
+                    <td className="p-4 sm:p-10">
+                      <p className="font-black text-slate-900 text-base sm:text-xl uppercase tracking-tighter group-hover:text-[#002868]">{item.first_name} {item.last_name}</p>
+                      <p className="text-xs sm:text-sm font-black text-[#002868] mt-1 tracking-widest uppercase italic">LRS ID: {item.unique_id}</p>
+                     </td>
+                    <td className="p-4 sm:p-10 text-slate-500 uppercase text-xs sm:text-sm tracking-widest font-black">{item.nationality} <br/> {item.county_of_residence} County</td>
+                    <td className="p-4 sm:p-10 text-center">
+                      <span className="bg-[#FFC72C]/20 text-[#002868] px-3 sm:px-5 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-black uppercase ring-1 ring-[#FFC72C]/50">{item.relief_assistance || 'NONE'}</span>
+                     </td>
+                    <td className="p-4 sm:p-10 text-right text-green-600 font-black text-xs sm:text-sm uppercase"><div className="flex items-center justify-end gap-2"><CheckCircle2 size={16} className="sm:w-5 sm:h-5" /> Verified 1:N</div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-between items-center mt-6 sm:mt-8">
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span className="text-sm sm:text-base font-bold text-gray-500">
+              Page {page} of {Math.ceil(totalCount / pageSize) || 1} ({totalCount} records)
+            </span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={page * pageSize >= totalCount}
+              className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// CustomDropdown component – replaces native select, opens on click anywhere
+function CustomDropdown({ options, value, onChange, placeholder }: any) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const filtered = useMemo(() => 
+    options.filter((o: string) => o.toLowerCase().includes(search.toLowerCase())),
+    [search, options]
+  );
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl text-left font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner flex justify-between items-center"
+      >
+        <span>{value || `Select ${placeholder}`}</span>
+        <ChevronDown className={`transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white shadow-2xl rounded-2xl z-[60] max-h-60 overflow-y-auto border border-slate-100 p-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search..."
+            className="w-full p-2 mb-2 border rounded-lg text-sm"
+            autoFocus
+          />
+          <div>
+            <button
+              onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
+              className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all"
+            >
+              All {placeholder}s
+            </button>
+            {filtered.map((o: string) => (
+              <button
+                key={o}
+                onClick={() => { onChange(o); setOpen(false); setSearch(''); }}
+                className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all"
+              >
+                {o}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ENROLLMENT WIZARD (unchanged, but with increased font sizes) ──
+function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize, isSaving }: any) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const toggleRelief = (item: string) => {
+    const current = draft.reliefAssistance;
+    const next = current.includes(item) ? current.filter((i: string) => i !== item) : [...current, item];
+    setDraft({...draft, reliefAssistance: next});
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto animate-in zoom-in-95 duration-500 pb-20">
+      <div className="flex justify-between items-end mb-6 sm:mb-8">
+        <div>
+          <h2 className="text-3xl sm:text-5xl font-black text-[#002868] uppercase tracking-tighter italic">Enrollment</h2>
+          <p className="text-lib-gold font-black uppercase text-xs sm:text-sm tracking-widest mt-2">Step {step} of 4: {step === 1 ? 'Classification' : step === 2 ? 'Biographical' : step === 3 ? 'Verification' : 'Biometrics'}</p>
+        </div>
+        <button onClick={onCancel} className="text-slate-400 font-bold hover:text-red-600 transition-all uppercase text-xs tracking-widest">Cancel</button>
+      </div>
+
+      <div className="bg-white rounded-2xl sm:rounded-[3.5rem] p-6 sm:p-12 shadow-2xl border border-slate-100 space-y-8 sm:space-y-10">
+        {step === 1 && (
+          <div className="space-y-8 sm:space-y-10 animate-in slide-in-from-right-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              <FormSelect label="Program Type" options={PROGRAM_TYPE_OPTIONS} value={draft.programType} onChange={(v:any) => setDraft({...draft, programType: v})} />
+              <FormSelect label="Category" options={CATEGORY_OPTIONS} value={draft.category} onChange={(v:any) => setDraft({...draft, category: v})} />
+            </div>
+            <div className="space-y-4">
+              <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Relief Assistance</label>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
+                {RELIEF_OPTIONS.map(item => (
+                  <button key={item} onClick={() => toggleRelief(item)} className={`p-3 sm:p-4 rounded-2xl font-bold text-xs sm:text-sm transition-all border-2 ${draft.reliefAssistance.includes(item) ? 'bg-[#002868] text-white border-[#002868]' : 'bg-slate-50 text-slate-400 border-slate-100'}`}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+              {draft.reliefAssistance.includes('Others') && (
+                <input value={draft.otherRelief} onChange={(e) => setDraft({...draft, otherRelief: e.target.value})} placeholder="Specify other relief items..." className="w-full p-4 sm:p-5 bg-slate-50 rounded-2xl border border-[#002868]/20 font-bold text-sm outline-none animate-in fade-in" />
+              )}
+            </div>
+            <FormSelect label="Reason for Migration" options={REASON_OPTIONS} value={draft.reason} onChange={(v:any) => setDraft({...draft, reason: v})} />
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 animate-in slide-in-from-right-4">
+            <FormInput label="First Name" value={draft.firstName} onChange={(v:any) => setDraft({...draft, firstName: v})} />
+            <FormInput label="Last Name" value={draft.lastName} onChange={(v:any) => setDraft({...draft, lastName: v})} />
+            <SmartSearch label="Nationality" options={ALL_NATIONALITIES} value={draft.nationality} onChange={(v:any) => setDraft({...draft, nationality: v})} />
+            <SmartSearch label="Country of Origin" options={ALL_NATIONALITIES} value={draft.countryOfOrigin} onChange={(v:any) => setDraft({...draft, countryOfOrigin: v})} />
+            <FormSelect label="Gender" options={GENDER_OPTIONS} value={draft.gender} onChange={(v:any) => setDraft({...draft, gender: v})} />
+            <FormInput label="Date of Birth" type="date" value={draft.dob} onChange={(v:any) => setDraft({...draft, dob: v})} />
+            <FormSelect label="County of Residence" options={COUNTIES} value={draft.county} onChange={(v:any) => setDraft({...draft, county: v, district: ''})} />
+            <FormSelect label="District of Residence" options={DISTRICTS_BY_COUNTY[draft.county] || []} value={draft.district} onChange={(v:any) => setDraft({...draft, district: v})} disabled={!draft.county} />
+            <FormInput label="Town / Village" value={draft.town} onChange={(v:any) => setDraft({...draft, town: v})} />
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-8 sm:space-y-10 animate-in slide-in-from-right-4">
+            <div className="bg-[#002868] p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl">
+              <div className="text-center sm:text-left">
+                <p className="text-[#FFC72C] font-black text-xs sm:text-sm uppercase tracking-widest mb-2">Forensic GPS</p>
+                <h3 className="text-xl sm:text-3xl font-black italic tracking-tighter">{draft.lat ? `${draft.lat.toFixed(6)}, ${draft.lng?.toFixed(6)}` : 'DISCONNECTED'}</h3>
+              </div>
+              <button onClick={() => navigator.geolocation.getCurrentPosition(p => setDraft({...draft, lat: p.coords.latitude, lng: p.coords.longitude}))} className="bg-lib-gold text-lib-blue p-5 sm:p-6 rounded-full shadow-2xl hover:scale-110 transition-all"><MapPin size={28} className="sm:w-8 sm:h-8"/></button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
+              <FormSelect label="Doc Type" options={TRAVEL_DOC_OPTIONS} value={draft.docType} onChange={(v:any) => setDraft({...draft, docType: v})} />
+              <FormInput label="Doc Number" value={draft.docNumber} onChange={(v:any) => setDraft({...draft, docNumber: v})} />
+              <FormInput label="Date of Issue" type="date" value={draft.docIssueDate} onChange={(v:any) => setDraft({...draft, docIssueDate: v})} />
+              <FormInput label="Date of Expiry" type="date" value={draft.docExpiryDate} onChange={(v:any) => setDraft({...draft, docExpiryDate: v})} />
+              <FormInput label="Phone" value={draft.phone} onChange={(v:any) => setDraft({...draft, phone: v})} />
+              <FormInput label="Email" value={draft.email} onChange={(v:any) => setDraft({...draft, email: v})} />
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-10 animate-in slide-in-from-right-4 text-center">
+            <div className="max-w-sm mx-auto bg-slate-100 rounded-[4rem] overflow-hidden border-8 border-slate-50 shadow-inner relative aspect-[3/4]">
+              {draft.photo ? <img src={draft.photo} className="w-full h-full object-cover" /> : <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" onLoadedMetadata={() => videoRef.current?.play()} />}
+              <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-6">
+                {draft.photo ? (
+                  <button onClick={() => { setDraft({...draft, photo: null}); setTimeout(() => { navigator.mediaDevices.getUserMedia({video: true}).then(s => {if(videoRef.current) videoRef.current.srcObject = s;}); }, 100); }} className="bg-red-600 p-5 sm:p-6 rounded-full text-white shadow-2xl hover:rotate-90 transition-all"><RefreshCw size={20} className="sm:w-6 sm:h-6"/></button>
+                ) : (
+                  <button onClick={() => {
+                    const ctx = canvasRef.current?.getContext('2d');
+                    if (canvasRef.current && videoRef.current) {
+                        canvasRef.current.width = 400; canvasRef.current.height = 533;
+                        ctx?.drawImage(videoRef.current, 0, 0, 400, 533);
+                        setDraft({...draft, photo: canvasRef.current.toDataURL('image/jpeg')});
+                    }
+                  }} className="bg-[#FFC72C] p-8 sm:p-10 rounded-full text-[#002868] shadow-2xl border-4 border-white"><Camera size={28} className="sm:w-9 sm:h-9"/></button>
+                )}
+              </div>
+            </div>
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+        )}
+
+        <div className="flex justify-between pt-8 sm:pt-12 border-t border-slate-100">
+          <button onClick={() => step > 1 && setStep(step - 1)} className={`px-6 sm:px-10 py-3 sm:py-5 rounded-2xl font-black text-xs sm:text-sm uppercase tracking-widest ${step === 1 ? 'opacity-0' : 'bg-slate-100 text-slate-400'}`}>Previous</button>
+          <button onClick={() => step < 4 ? setStep(step + 1) : onFinalize()} disabled={isSaving} className="bg-[#002868] text-white px-10 sm:px-16 py-3 sm:py-5 rounded-2xl font-black tracking-widest shadow-2xl uppercase text-sm sm:text-base">
+            {isSaving ? <Loader2 className="animate-spin" /> : step === 4 ? 'Submit Registry' : 'Continue'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PROFILE DIALOG (enhanced) ──
+function ProfileDialog({ record, onClose }: any) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+       <div className="bg-white rounded-2xl sm:rounded-[3.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 max-h-[90vh] flex flex-col">
+          <div className="bg-[#002868] p-6 sm:p-10 text-white flex justify-between items-center">
+             <div className="flex items-center gap-4 sm:gap-6">
+                <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-[1.5rem] sm:rounded-[2rem] bg-white/10 flex items-center justify-center font-black text-xl sm:text-3xl uppercase">{record.first_name?.charAt(0)}</div>
+                <div>
+                   <h2 className="text-xl sm:text-4xl font-black uppercase tracking-tighter leading-none">{record.first_name} {record.last_name}</h2>
+                   <p className="text-[#FFC72C] font-black text-xs sm:text-sm mt-2 uppercase tracking-[0.2em]">ID: {record.unique_id}</p>
+                </div>
+             </div>
+             <button onClick={onClose} className="p-2 sm:p-4 bg-white/10 rounded-full hover:bg-white/20 transition-all"><X size={20} className="sm:w-7 sm:h-7"/></button>
+          </div>
+          <div className="p-6 sm:p-12 space-y-6 sm:space-y-10 overflow-y-auto flex-1">
+             <div className="grid grid-cols-2 gap-4 sm:gap-10">
+                <ProfileItem label="Nationality" value={record.nationality} icon={<Globe size={12}/>}/>
+                <ProfileItem label="Origin" value={record.country_of_origin} icon={<MapIcon size={12}/>}/>
+                <ProfileItem label="County" value={record.county_of_residence} icon={<MapPin size={12}/>}/>
+                <ProfileItem label="District" value={record.district_of_residence} icon={<MapPin size={12}/>}/>
+                <ProfileItem label="Gender" value={record.gender} icon={<User size={12}/>}/>
+                <ProfileItem label="Birth Date" value={record.date_of_birth ? new Date(record.date_of_birth).toLocaleDateString() : 'N/A'} icon={<Calendar size={12}/>}/>
+             </div>
+             <hr className="my-2 border-gray-100" />
+             <div className="grid grid-cols-2 gap-4 sm:gap-6">
+                <ProfileItem label="Travel Document" value={`${record.travel_document_type || ''} ${record.travel_document_number || ''}`.trim() || 'N/A'} icon={<Hash size={12}/>} />
+                <ProfileItem label="Issue/Expiry" value={`${record.date_of_issue ? new Date(record.date_of_issue).toLocaleDateString() : 'N/A'} → ${record.date_of_expiry ? new Date(record.date_of_expiry).toLocaleDateString() : 'N/A'}`} icon={<Calendar size={12}/>} />
+                <ProfileItem label="GPS" value={record.gps_latitude && record.gps_longitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : 'Not captured'} icon={<MapPin size={12}/>} />
+                <ProfileItem label="Agent ID" value={record.registered_by_agent_id || 'N/A'} icon={<User size={12}/>} />
+                <ProfileItem label="Sync Status" value={record.sync_status} icon={<CheckCircle2 size={12}/>} />
+                <ProfileItem label="Registered" value={new Date(record.registration_timestamp).toLocaleString()} icon={<Calendar size={12}/>} />
+             </div>
+             <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl sm:rounded-3xl space-y-2 border border-slate-100">
+                <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Relief Status</p>
+                <p className="font-black text-[#002868] uppercase text-sm sm:text-base">{record.relief_assistance || 'NONE'}</p>
+             </div>
+          </div>
+          <div className="p-6 sm:p-10 border-t border-slate-100 flex justify-end">
+             <button onClick={onClose} className="bg-[#002868] text-white px-8 sm:px-12 py-3 sm:py-5 rounded-2xl font-black uppercase text-xs sm:text-sm tracking-[0.3em] shadow-xl">Dismiss</button>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// ── HELPER COMPONENTS (with increased font sizes) ──
+function ActionTile({ title, desc, icon, color, onClick }: any) {
+  return (
+    <button onClick={onClick} className={`${color} p-8 sm:p-16 rounded-3xl sm:rounded-[5rem] text-white text-left shadow-2xl hover:-translate-y-3 transition-all relative overflow-hidden group border-b-[12px] sm:border-b-[16px] border-black/20`}>
+       <div className="relative z-10">
+          <div className="bg-white/10 w-16 h-16 sm:w-24 sm:h-24 rounded-2xl sm:rounded-[2.5rem] flex items-center justify-center mb-6 sm:mb-10 border border-white/20">{icon}</div>
+          <h3 className="text-2xl sm:text-5xl font-black mb-2 sm:mb-4 tracking-tighter uppercase italic">{title}</h3>
+          <p className="text-sm sm:text-base font-bold opacity-60 leading-relaxed max-w-[280px] sm:max-w-[320px]">{desc}</p>
+       </div>
+       <div className="absolute -right-12 sm:-right-16 -bottom-12 sm:-bottom-16 opacity-5 group-hover:scale-150 transition-all duration-1000">{icon}</div>
+    </button>
+  );
+}
+
+function SmartSearch({ label, options, value, onChange }: any) {
+  const [search, setSearch] = useState('');
+  const [open, setOpen] = useState(false);
+  const filtered = useMemo(() => options.filter((o:string) => o.toLowerCase().includes(search.toLowerCase())), [search, options]);
+  return (
+    <div className="flex flex-col gap-3 relative">
+      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">{label}</label>
+      <input value={value || search} onFocus={() => setOpen(true)} onChange={(e) => setSearch(e.target.value)} placeholder={`Search ${label}...`} className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base" />
+      {open && (
+        <div className="absolute top-[100%] left-0 right-0 bg-white shadow-2xl rounded-2xl z-[60] max-h-60 overflow-y-auto border border-slate-100 mt-2 p-2">
+          {filtered.map((o:string) => (
+            <button key={o} onClick={() => { onChange(o); setSearch(''); setOpen(false); }} className="w-full text-left p-3 sm:p-4 font-bold text-sm sm:text-base hover:bg-[#002868] hover:text-white rounded-xl transition-all">{o}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MiniFilter({ label, options, value, onChange }: any) {
+  return (
+    <div className="bg-slate-50 p-2 sm:p-4 rounded-2xl flex flex-col gap-1 ring-1 ring-slate-200 relative">
+      <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent font-bold text-sm sm:text-base outline-none appearance-none cursor-pointer w-full pr-6 sm:pr-8">
+        <option value="">All {label}s</option>
+        {options.map((o:string) => <option key={o} value={o}>{o}</option>)}
+      </select>
+      <ChevronDown className="absolute right-2 sm:right-4 bottom-2 sm:bottom-4 text-slate-300 pointer-events-none" size={14} />
+    </div>
+  );
+}
+
+function ProfileItem({ label, value, icon }: any) {
+  return (
+    <div>
+      <p className="text-xs sm:text-sm font-black text-slate-400 uppercase flex items-center gap-2 mb-1">{icon} {label}</p>
+      <p className="font-bold text-sm sm:text-base text-slate-800">{value || 'N/A'}</p>
+    </div>
+  );
+}
+
+function FormInput({ label, value, onChange, type = "text" }: any) {
+  return (
+    <div className="flex flex-col gap-2 sm:gap-3">
+      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner" />
+    </div>
+  );
+}
+
+function FormSelect({ label, options, value, onChange, disabled }: any) {
+  return (
+    <div className="flex flex-col gap-2 sm:gap-3">
+      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
+      <div className="relative">
+        <select disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base appearance-none cursor-pointer disabled:opacity-30 shadow-inner">
+          <option value="">Select {label}</option>
+          {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
+        </select>
+        <ChevronDown className="absolute right-4 sm:right-6 top-4 sm:top-6 text-slate-300 pointer-events-none" size={16} />
+      </div>
+    </div>
+  );
+}
+
+function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const handleLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) toast.error(error.message);
+    setLoading(false);
+  };
+  return (
+    <div className="relative min-h-screen bg-[#002868] flex items-center justify-center p-4">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <img
+          src="/login_bg.png"
+          alt="Background"
+          className="w-full h-full object-contain object-center"
+        />
+      </div>
+      <div className="absolute inset-0 bg-black/20" />
+      <div className="relative z-10 bg-white/10 backdrop-blur-md rounded-3xl sm:rounded-[5rem] border border-white/20 shadow-2xl max-w-md w-full text-center p-6 sm:p-12">
+        <img src="/imm_badge.png" alt="Immigration Badge" className="h-16 sm:h-20 mx-auto mb-4 sm:mb-6" />
+        <h2 className="text-white text-3xl sm:text-4xl font-black uppercase tracking-tighter mb-2 italic">RIMS PORTAL</h2>
+        <p className="text-[#FFC72C] text-xs sm:text-sm font-black tracking-[0.5em] mb-8 sm:mb-12 uppercase">National Access Gateway</p>
+        <div className="space-y-4">
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none transition-all text-sm sm:text-base"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Access Key"
+            className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none transition-all text-sm sm:text-base"
+          />
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full bg-[#FFC72C] text-[#002868] py-3 sm:py-4 rounded-2xl font-black tracking-[0.3em] uppercase hover:bg-white transition-all shadow-lg mt-4 text-xs sm:text-sm"
+          >
+            {loading ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Authenticate'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
