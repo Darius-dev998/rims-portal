@@ -118,9 +118,9 @@ export default function CommandPortal() {
           <img src="/imm_badge.png" alt="Immigration Badge" className="h-10 sm:h-12 w-auto" />
           {/* Placeholders for two additional images */}
           <div className="flex gap-2">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white/50 text-xs">Img1</div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-full flex items-center justify-center text-white/50 text-xs">Img2</div>
-          </div>
+  <img src="/nir_logo.png" alt="NIR Logo" className="h-10 sm:h-12 w-auto" />
+  <img src="/lrrrc_logo.png" alt="LRRRC Logo" className="h-10 sm:h-12 w-auto" />
+</div>
           <div>
             <h1 className="font-black text-xl sm:text-2xl leading-none tracking-tighter">RIMS PORTAL</h1>
             <p className="text-[8px] sm:text-[10px] font-bold text-[#FFC72C] tracking-[0.2em] uppercase">Republic of Liberia</p>
@@ -149,9 +149,9 @@ function Dashboard({ setView, totalRecords, pendingSync }: any) {
             <img src="/imm_badge.png" alt="Immigration Badge" className="w-24 sm:w-32 h-auto" />
             {/* Placeholders for two additional images */}
             <div className="flex gap-3">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 1</div>
-              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 2</div>
-            </div>
+  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 1</div>
+  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 text-xs">Logo 2</div>
+</div>
             <div className="text-center sm:text-left">
               <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
               <h2 className="text-3xl sm:text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Authorized Access</h2>
