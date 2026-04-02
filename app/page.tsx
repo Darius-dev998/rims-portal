@@ -646,8 +646,8 @@ function ProfileDialog({ record, onClose }: any) {
   };
 
   const reliefOptions = ['Rice', 'Oil', 'Cash', 'Household Materials'];
-  const selectedRelief = record.relief_assistance ? record.relief_assistance.split(', ').map(s => s.trim()) : [];
-
+  const selectedRelief = record.relief_assistance ? record.relief_assistance.split(', ').map((s: string) => s.trim()) : [];
+  
   return (
     <>
       {/* Print styles – ensure modal content prints properly */}
