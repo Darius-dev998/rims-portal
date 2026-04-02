@@ -636,7 +636,6 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
   );
 }
 // ── PROFILE FORM ──
-// ── ENHANCED PROFILE DIALOG with reliable print (new window) ──
 function ProfileDialog({ record, onClose }: any) {
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return '—';
@@ -650,14 +649,33 @@ function ProfileDialog({ record, onClose }: any) {
     ? record.relief_assistance.split(', ').map((s: string) => s.trim())
     : [];
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    // ── 1. Pre-fetch the photo and convert to base64 BEFORE opening print window ──
+    let photoSrc = '';
+    if (record.remote_photo_url) {
+      try {
+        const response = await fetch(record.remote_photo_url);
+        const blob = await response.blob();
+        photoSrc = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (err) {
+        console.warn('Could not load photo for print:', err);
+        photoSrc = '';
+      }
+    }
+
+    // ── 2. Open the print window only after photo is ready ──
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Please allow pop-ups to print');
       return;
     }
 
-    printWindow.document.write(`
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -678,25 +696,11 @@ function ProfileDialog({ record, onClose }: any) {
             padding-bottom: 10px;
             margin-bottom: 20px;
           }
-          .logo {
-            max-height: 60px;
-          }
-          .title {
-            text-align: right;
-          }
-          h1 {
-            font-size: 18px;
-            margin: 0;
-            color: #002868;
-          }
-          h2 {
-            font-size: 14px;
-            margin: 5px 0;
-          }
-          .section {
-            margin-bottom: 20px;
-            break-inside: avoid;
-          }
+          .logo { max-height: 60px; }
+          .title { text-align: right; }
+          h1 { font-size: 18px; margin: 0; color: #002868; }
+          h2 { font-size: 14px; margin: 5px 0; }
+          .section { margin-bottom: 20px; break-inside: avoid; }
           .section-title {
             background-color: #f0f0f0;
             padding: 5px 10px;
@@ -704,40 +708,23 @@ function ProfileDialog({ record, onClose }: any) {
             border-left: 4px solid #002868;
             margin-bottom: 10px;
           }
-          .grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-          }
-          .field {
-            margin-bottom: 8px;
-          }
-          .field-label {
-            font-weight: bold;
-            font-size: 11px;
-            color: #555;
-          }
-          .field-value {
-            font-size: 12px;
-            border-bottom: 1px solid #ccc;
-            padding: 2px 0;
-          }
-          .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 5px;
-          }
-          .checkbox-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-          }
-          .photo {
+          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+          .field { margin-bottom: 8px; }
+          .field-label { font-weight: bold; font-size: 11px; color: #555; }
+          .field-value { font-size: 12px; border-bottom: 1px solid #ccc; padding: 2px 0; }
+          .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
+          .checkbox-item { display: flex; align-items: center; gap: 5px; }
+          .photo-block { text-align: right; margin-bottom: 20px; }
+          .photo { width: 100px; height: 100px; object-fit: cover; border: 1px solid #ccc; }
+          .photo-placeholder {
+            display: inline-flex;
             width: 100px;
             height: 100px;
-            object-fit: cover;
-            border: 1px solid #ccc;
+            border: 1px dashed #ccc;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: #999;
           }
           .footer {
             margin-top: 30px;
@@ -747,12 +734,8 @@ function ProfileDialog({ record, onClose }: any) {
             padding-top: 10px;
           }
           @media print {
-            body {
-              margin: 0.2in;
-            }
-            .no-print {
-              display: none;
-            }
+            body { margin: 0.2in; }
+            .no-print { display: none; }
           }
         </style>
       </head>
@@ -767,7 +750,12 @@ function ProfileDialog({ record, onClose }: any) {
           </div>
         </div>
 
-        ${record.remote_photo_url ? `<div style="text-align: right; margin-bottom: 20px;"><img src="${record.remote_photo_url}" class="photo" /></div>` : ''}
+        <div class="photo-block">
+          ${photoSrc
+            ? `<img src="${photoSrc}" class="photo" alt="Registrant photo" />`
+            : `<div class="photo-placeholder">No Photo</div>`
+          }
+        </div>
 
         <div class="section">
           <div class="section-title">Registration Classification</div>
@@ -814,8 +802,20 @@ function ProfileDialog({ record, onClose }: any) {
         <div class="section">
           <div class="section-title">Relief Assistance Provided</div>
           <div class="checkbox-group">
-            ${reliefOptions.map(opt => `<div class="checkbox-item"><input type="checkbox" ${selectedRelief.includes(opt) ? 'checked' : ''} disabled /> <label>${opt}</label></div>`).join('')}
-            ${selectedRelief.filter(r => !reliefOptions.includes(r)).map(other => `<div class="checkbox-item"><input type="checkbox" checked disabled /> <label>Other: ${other}</label></div>`).join('')}
+            ${reliefOptions.map(opt =>
+              `<div class="checkbox-item">
+                 <input type="checkbox" ${selectedRelief.includes(opt) ? 'checked' : ''} disabled />
+                 <label>${opt}</label>
+               </div>`
+            ).join('')}
+            ${selectedRelief
+              .filter(r => !reliefOptions.includes(r))
+              .map(other =>
+                `<div class="checkbox-item">
+                   <input type="checkbox" checked disabled />
+                   <label>Other: ${other}</label>
+                 </div>`
+              ).join('')}
           </div>
         </div>
 
@@ -834,26 +834,37 @@ function ProfileDialog({ record, onClose }: any) {
         </div>
 
         <div class="footer">
-          This is an official record of the Liberia Refugee Immigration Management System (RIMS).<br>
+          This is an official record of the Liberia Refugee Immigration Management System (RIMS).<br/>
           Generated on ${new Date().toLocaleString()}
         </div>
       </body>
       </html>
-    `);
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
     printWindow.document.close();
-    printWindow.print();
+
+    // ── 3. All content is already inline (base64), so onload fires with everything ready ──
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
   };
 
   return (
     <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+
           {/* Header */}
           <div className="bg-[#002868] text-white p-4 sm:p-6 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <img src="/imm_badge.png" alt="RIMS" className="h-12 w-auto" />
               <div>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Refugee Immigration Management System</h2>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">
+                  Refugee Immigration Management System
+                </h2>
                 <p className="text-sm text-[#FFC72C]">Republic of Liberia – Official Registration Record</p>
               </div>
             </div>
@@ -862,7 +873,7 @@ function ProfileDialog({ record, onClose }: any) {
             </button>
           </div>
 
-          {/* Scrollable content (same as before) – we keep the on‑screen form too */}
+          {/* Scrollable content */}
           <div className="p-6 sm:p-8 overflow-y-auto flex-1">
             <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
               <div className="flex-1">
@@ -873,7 +884,11 @@ function ProfileDialog({ record, onClose }: any) {
               </div>
               <div className="flex-shrink-0">
                 {record.remote_photo_url ? (
-                  <img src={record.remote_photo_url} alt="Refugee photo" className="w-32 h-32 object-cover border-2 border-gray-300 rounded-md shadow" />
+                  <img
+                    src={record.remote_photo_url}
+                    alt="Refugee photo"
+                    className="w-32 h-32 object-cover border-2 border-gray-300 rounded-md shadow"
+                  />
                 ) : (
                   <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs">
                     Photo not available
@@ -882,22 +897,112 @@ function ProfileDialog({ record, onClose }: any) {
               </div>
             </div>
 
-            {/* Sections – keep as before, but we already have them in the print version */}
-            {/* For brevity, I'm showing the essential structure; you can keep your existing FormBox layout here */}
+            {/* Registration Classification */}
             <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Registration Classification</h3>
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Registration Classification
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormBox label="Program Type" value={record.program_type || '—'} />
                 <FormBox label="Category" value={record.category || '—'} />
               </div>
             </div>
 
-            {/* … (the rest of your existing FormBox fields for Bio Data, Residence, etc.) … */}
-            {/* To save space, I assume you keep the existing layout from the previous version. */}
-            {/* But the critical fix is the print function above. */}
+            {/* Basic Bio Data */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Basic Bio Data
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Full Name" value={`${record.first_name || ''} ${record.last_name || ''}`} />
+                <FormBox label="Unique ID" value={record.unique_id || '—'} />
+                <FormBox label="Date of Birth" value={formatDate(record.date_of_birth)} />
+                <FormBox label="Gender" value={record.gender || '—'} />
+                <FormBox label="Nationality" value={record.nationality || '—'} />
+                <FormBox label="Country of Origin" value={record.country_of_origin || '—'} />
+                <FormBox label="Phone Number" value={record.phone_number || '—'} />
+                <FormBox label="Email Address" value={record.email_address || '—'} />
+              </div>
+            </div>
+
+            {/* Residence & Location */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Residence & Location
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="County" value={record.county_of_residence || '—'} />
+                <FormBox label="District" value={record.district_of_residence || '—'} />
+                <FormBox label="Town/Village" value={record.town_or_village || '—'} />
+                <FormBox
+                  label="GPS"
+                  value={
+                    record.gps_latitude && record.gps_longitude
+                      ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}`
+                      : '—'
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Travel Document */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Travel Document
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Document Type" value={record.travel_document_type || '—'} />
+                <FormBox label="Document Number" value={record.travel_document_number || '—'} />
+                <FormBox label="Date of Issue" value={formatDate(record.date_of_issue)} />
+                <FormBox label="Date of Expiry" value={formatDate(record.date_of_expiry)} />
+              </div>
+            </div>
+
+            {/* Relief Assistance */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Relief Assistance Provided
+              </h3>
+              <div className="flex flex-wrap gap-4">
+                {reliefOptions.map(opt => (
+                  <label key={opt} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={selectedRelief.includes(opt)} readOnly />
+                    {opt}
+                  </label>
+                ))}
+                {selectedRelief
+                  .filter(r => !reliefOptions.includes(r))
+                  .map(other => (
+                    <label key={other} className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked readOnly />
+                      Other: {other}
+                    </label>
+                  ))}
+              </div>
+            </div>
+
+            {/* Reason for Migration */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Reason for Migration
+              </h3>
+              <p className="text-sm text-gray-700">{record.reason_for_migration || '—'}</p>
+            </div>
+
+            {/* Registration Info */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
+                Registration Info
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Registered By (Agent ID)" value={record.registered_by_agent_id || '—'} />
+                <FormBox label="Registration Date" value={formatDate(record.registration_timestamp)} />
+                <FormBox label="Sync Status" value={record.sync_status || '—'} />
+              </div>
+            </div>
           </div>
 
-          {/* Buttons */}
+          {/* Footer Buttons */}
           <div className="p-4 border-t border-gray-100 flex justify-end gap-3">
             <button
               onClick={handlePrint}
@@ -912,6 +1017,7 @@ function ProfileDialog({ record, onClose }: any) {
               Close
             </button>
           </div>
+
         </div>
       </div>
     </>
