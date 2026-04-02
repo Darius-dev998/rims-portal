@@ -647,7 +647,7 @@ function ProfileDialog({ record, onClose }: any) {
 
   const reliefOptions = ['Rice', 'Oil', 'Cash', 'Household Materials'];
   const selectedRelief = record.relief_assistance ? record.relief_assistance.split(', ').map((s: string) => s.trim()) : [];
-  
+
   return (
     <>
       {/* Print styles – ensure modal content prints properly */}
@@ -787,7 +787,7 @@ function ProfileDialog({ record, onClose }: any) {
                     <span className="text-sm">{option}</span>
                   </div>
                 ))}
-                {selectedRelief.filter(r => !reliefOptions.includes(r)).map(other => (
+                {selectedRelief.filter((r: string) => !reliefOptions.includes(r)).map((other: string) => (
                   <div key={other} className="flex items-center gap-2 col-span-2">
                     <input type="checkbox" checked readOnly disabled className="w-4 h-4" />
                     <span className="text-sm italic">Other: {other}</span>
