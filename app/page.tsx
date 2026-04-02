@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -530,152 +529,161 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
   );
 }
 
-// ── PROFILE FORM (FIXED PDF DOWNLOAD) ──
-function ProfileDialog({ record, onClose }: any) {
+// ── PROFILE FORM (FIXED PDF DOWNLOAD & VERCEL SAFE) ──
+function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }) {
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return '—';
-    return new Date(timestamp).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    });
+    try {
+      return new Date(timestamp).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+    } catch (e) {
+      return '—';
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    const toastId = toast.loading('Generating official PDF record...');
+    
+    try {
+      // 1. Photo fetch as Base64 (Essential for PDF generation)
+      let photoBase64 = '';
+      if (record.remote_photo_url) {
+        try {
+          const response = await fetch(record.remote_photo_url);
+          const blob = await response.blob();
+          photoBase64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (err) {
+          console.warn('Photo fetch failed', err);
+        }
+      }
+
+      // 2. Load html2pdf dynamically to avoid build/SSR issues on Vercel
+      // @ts-ignore
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+
+      // 3. Create PDF Template (Styled for 1 Page)
+      const element = document.createElement('div');
+      element.style.padding = "30px";
+      element.style.background = "white";
+      element.style.color = "#333";
+      element.style.width = "750px"; 
+
+      // Section helper
+      const pdfSection = (title: string, fields: [string, any][]) => `
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+          <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px;">${title}</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 5px;">
+            ${fields.map(([label, value]) => `
+              <div style="margin-bottom: 5px;">
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">${label}</div>
+                <div style="font-size: 11px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; min-height: 14px;">${value || '—'}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      element.innerHTML = `
+        <div style="font-family: Arial, sans-serif;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #002868; padding-bottom: 10px; margin-bottom: 20px;">
+            <img src="${window.location.origin}/imm_badge.png" style="height: 50px;" />
+            <div style="text-align: right;">
+              <h1 style="margin: 0; color: #002868; font-size: 16px; font-weight: 900; text-transform: uppercase;">Refugee Immigration Management System</h1>
+              <h2 style="margin: 3px 0 0; font-size: 10px; color: #475569; font-weight: bold;">Republic of Liberia – Official Registration Record</h2>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 30px;">
+            <div style="flex: 1;">
+              <h3 style="font-size: 22px; margin: 0 0 10px; color: #0f172a; font-weight: 900; text-transform: uppercase;">Refugee Registration Form</h3>
+              <div style="font-size: 10px; color: #64748b; margin-bottom: 5px;"><strong>Unique ID:</strong> <span style="color: #002868;">${record.unique_id || '—'}</span></div>
+              <div style="font-size: 10px; color: #64748b;"><strong>Generated On:</strong> ${new Date().toLocaleString()}</div>
+            </div>
+            <div>
+              ${photoBase64 
+                ? `<img src="${photoBase64}" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #f1f5f9; border-radius: 8px;" />` 
+                : `<div style="width: 110px; height: 110px; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px;">No Photo</div>`
+              }
+            </div>
+          </div>
+
+          ${pdfSection("Classification", [
+            ["Program Type", record.program_type],
+            ["Category", record.category]
+          ])}
+
+          ${pdfSection("Basic Bio Data", [
+            ["Full Name", `${record.first_name || ''} ${record.last_name || ''}`],
+            ["Date of Birth", formatDate(record.date_of_birth)],
+            ["Gender", record.gender],
+            ["Nationality", record.nationality],
+            ["Country of Origin", record.country_of_origin],
+            ["Phone Number", record.phone_number]
+          ])}
+
+          ${pdfSection("Residence & Location", [
+            ["County", record.county_of_residence],
+            ["District", record.district_of_residence],
+            ["Town/Village", record.town_or_village],
+            ["GPS", record.gps_latitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—']
+          ])}
+
+          ${pdfSection("Travel Document", [
+            ["Document Type", record.travel_document_type],
+            ["Document Number", record.travel_document_number],
+            ["Date of Issue", formatDate(record.date_of_issue)],
+            ["Date of Expiry", formatDate(record.date_of_expiry)]
+          ])}
+
+          <div style="margin-bottom: 20px;">
+            <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px;">Assistance & Migration</div>
+            <div style="padding: 0 5px;">
+              <div style="margin-bottom: 10px;">
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">Relief Assistance Provided</div>
+                <div style="font-size: 11px; color: #1e293b;">${record.relief_assistance || '—'}</div>
+              </div>
+              <div>
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">Reason for Migration</div>
+                <div style="font-size: 11px; color: #1e293b; line-height: 1.4;">${record.reason_for_migration || '—'}</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Agent ID: ${record.registered_by_agent_id || '—'}</div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">Official RIMS Record</div>
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Date: ${formatDate(record.registration_timestamp)}</div>
+          </div>
+        </div>
+      `;
+
+      const opt = {
+        margin: 0,
+        filename: `Refugee_Record_${record.unique_id || 'unnamed'}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'in' as const, format: 'letter' as const, orientation: 'portrait' as const }
+      };
+
+      await html2pdf().from(element).set(opt).save();
+      toast.success('PDF downloaded successfully!', { id: toastId });
+
+    } catch (err) {
+      console.error('PDF Error:', err);
+      toast.error('Failed to generate PDF. Is html2pdf.js installed?', { id: toastId });
+    }
   };
 
   const reliefOptions: string[] = ['Rice', 'Oil', 'Cash', 'Household Materials'];
   const selectedRelief: string[] = record.relief_assistance
     ? record.relief_assistance.split(', ').map((s: string) => s.trim())
     : [];
-
-  const handlePrint = async () => {
-    const toastId = toast.loading('Generating official PDF record...');
-    
-    // 1. Photo fetch as Base64 (to ensure it appears in PDF)
-    let photoBase64 = '';
-    if (record.remote_photo_url) {
-      try {
-        const response = await fetch(record.remote_photo_url);
-        const blob = await response.blob();
-        photoBase64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      } catch (err) {
-        console.warn('Photo fetch failed', err);
-      }
-    }
-
-    // 2. Load html2pdf dynamically
-    let html2pdf;
-    try {
-      // @ts-ignore
-      const mod = await import('html2pdf.js');
-      html2pdf = mod.default;
-    } catch (e) {
-      toast.error('PDF Library not found. Run: npm install html2pdf.js', { id: toastId });
-      return;
-    }
-
-    // 3. Create PDF Template
-    const element = document.createElement('div');
-    element.innerHTML = `
-      <div style="padding: 40px; font-family: Arial, sans-serif; color: #333; background: white; width: 750px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #002868; padding-bottom: 15px; margin-bottom: 25px;">
-          <img src="${window.location.origin}/imm_badge.png" style="height: 60px;" />
-          <div style="text-align: right;">
-            <h1 style="margin: 0; color: #002868; font-size: 18px; font-weight: 900; text-transform: uppercase;">Refugee Immigration Management System</h1>
-            <h2 style="margin: 5px 0 0; font-size: 12px; color: #666; font-weight: bold;">Republic of Liberia – Official Registration Record</h2>
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; gap: 40px;">
-          <div style="flex: 1;">
-            <h3 style="font-size: 26px; margin: 0 0 15px; color: #111; font-weight: 900; text-transform: uppercase;">Refugee Registration Form</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-               <div>
-                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold;">Full Name</div>
-                  <div style="font-size: 14px; font-weight: bold; color: #000; border-bottom: 1px solid #eee;">${record.first_name || ''} ${record.last_name || ''}</div>
-               </div>
-               <div>
-                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold;">Unique ID</div>
-                  <div style="font-size: 14px; font-weight: bold; color: #002868; border-bottom: 1px solid #eee;">${record.unique_id || '—'}</div>
-               </div>
-            </div>
-          </div>
-          <div style="flex-shrink: 0;">
-            ${photoBase64 ? `<img src="${photoBase64}" style="width: 130px; height: 130px; object-fit: cover; border: 4px solid #f8f8f8; border-radius: 12px;" />` : `<div style="width: 130px; height: 130px; border: 2px dashed #ddd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #aaa;">No Photo</div>`}
-          </div>
-        </div>
-
-        ${renderPdfSection("Classification & Identity", [
-          ["Program Type", record.program_type],
-          ["Category", record.category],
-          ["Nationality", record.nationality],
-          ["Gender", record.gender],
-          ["Date of Birth", formatDate(record.date_of_birth)],
-          ["Country of Origin", record.country_of_origin]
-        ])}
-
-        ${renderPdfSection("Contact & Residence", [
-          ["County", record.county_of_residence],
-          ["District", record.district_of_residence],
-          ["Town/Village", record.town_or_village],
-          ["Phone Number", record.phone_number],
-          ["Email Address", record.email_address],
-          ["GPS Coordinates", record.gps_latitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—']
-        ])}
-
-        ${renderPdfSection("Travel Documentation", [
-          ["Document Type", record.travel_document_type],
-          ["Document Number", record.travel_document_number],
-          ["Issue Date", formatDate(record.date_of_issue)],
-          ["Expiry Date", formatDate(record.date_of_expiry)]
-        ])}
-
-        <div style="margin-bottom: 20px;">
-          <div style="background: #f1f5f9; padding: 8px 15px; font-weight: 900; font-size: 12px; color: #002868; text-transform: uppercase; border-left: 5px solid #FFC72C; margin-bottom: 12px;">Relief & Migration Details</div>
-          <div style="display: grid; grid-template-columns: 1fr; gap: 15px; padding: 0 10px;">
-            <div><div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">Assistance Provided</div><div style="font-size: 12px;">${record.relief_assistance || 'None'}</div></div>
-            <div><div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">Reason for Migration</div><div style="font-size: 12px; line-height: 1.4;">${record.reason_for_migration || '—'}</div></div>
-          </div>
-        </div>
-
-        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-end;">
-          <div><div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Agent ID</div><div style="font-size: 11px; font-weight: bold;">${record.registered_by_agent_id || 'SYSTEM'}</div></div>
-          <div style="text-align: center;"><div style="font-size: 10px; color: #64748b; font-weight: bold;">Official RIMS Record</div></div>
-          <div style="text-align: right;"><div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Generated</div><div style="font-size: 11px; font-weight: bold;">${new Date().toLocaleString()}</div></div>
-        </div>
-      </div>
-    `;
-
-    function renderPdfSection(title: string, fields: [string, any][]) {
-      return `
-        <div style="margin-bottom: 25px;">
-          <div style="background: #f1f5f9; padding: 8px 15px; font-weight: 900; font-size: 12px; color: #002868; text-transform: uppercase; border-left: 5px solid #FFC72C; margin-bottom: 12px;">${title}</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 0 10px;">
-            ${fields.map(([label, value]) => `
-              <div>
-                <div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">${label}</div>
-                <div style="font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${value || '—'}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>`;
-    }
-
-    const options = {
-      margin: 0,
-      filename: `RIMS_Record_${record.unique_id}.pdf`,
-      image: { type: 'jpeg' as const, quality: 1 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
-    };
-
-    try {
-      await html2pdf().from(element).set(options).save();
-      toast.success('PDF downloaded successfully!', { id: toastId });
-    } catch (err) {
-      toast.error('Failed to generate PDF', { id: toastId });
-    }
-  };
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
@@ -782,7 +790,7 @@ function ProfileDialog({ record, onClose }: any) {
         </div>
 
         <div className="p-4 border-t border-gray-100 flex justify-end gap-3">
-          <button onClick={handlePrint} className="bg-[#002868] text-white px-6 py-2 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-[#001a4f] flex items-center gap-2">
+          <button onClick={handleDownloadPDF} className="bg-[#002868] text-white px-6 py-2 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-[#001a4f] flex items-center gap-2">
             <Printer size={16} /> Save as PDF
           </button>
           <button onClick={onClose} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-black uppercase text-sm hover:bg-gray-300">Close</button>
