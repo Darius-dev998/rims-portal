@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { 
   Fingerprint, Search, LogOut, ShieldCheck, MapPin, Loader2, CheckCircle2, 
   Database, Users, UserPlus, X, ChevronRight, Camera, Package, Calendar, 
-  Hash, User, Info, RefreshCw, AlertCircle, Globe, Map as MapIcon, ChevronDown, Download
+  Hash, User, Info, RefreshCw, AlertCircle, Globe, Map as MapIcon, ChevronDown, Download,
+  Printer
 } from 'lucide-react';
 import { 
   COUNTIES, REASON_OPTIONS, RELIEF_OPTIONS, GENDER_OPTIONS, 
@@ -634,49 +635,236 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
     </div>
   );
 }
-
-// ── PROFILE DIALOG (enhanced) ──
+// ── PROFILE FORM ──
+// ── UNHCR-STYLE PROFILE MODAL WITH PRINT FIX ──
 function ProfileDialog({ record, onClose }: any) {
+  const formatDate = (timestamp: number | null) => {
+    if (!timestamp) return '—';
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+  };
+
+  const reliefOptions = ['Rice', 'Oil', 'Cash', 'Household Materials'];
+  const selectedRelief = record.relief_assistance ? record.relief_assistance.split(', ').map(s => s.trim()) : [];
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-       <div className="bg-white rounded-2xl sm:rounded-[3.5rem] w-full max-w-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 max-h-[90vh] flex flex-col">
-          <div className="bg-[#002868] p-6 sm:p-10 text-white flex justify-between items-center">
-             <div className="flex items-center gap-4 sm:gap-6">
-                <div className="w-12 h-12 sm:w-20 sm:h-20 rounded-[1.5rem] sm:rounded-[2rem] bg-white/10 flex items-center justify-center font-black text-xl sm:text-3xl uppercase">{record.first_name?.charAt(0)}</div>
-                <div>
-                   <h2 className="text-xl sm:text-4xl font-black uppercase tracking-tighter leading-none">{record.first_name} {record.last_name}</h2>
-                   <p className="text-[#FFC72C] font-black text-xs sm:text-sm mt-2 uppercase tracking-[0.2em]">ID: {record.unique_id}</p>
+    <>
+      {/* Print styles – ensure modal content prints properly */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-modal,
+          .print-modal * {
+            visibility: visible;
+          }
+          .print-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0.5in;
+            background: white;
+            font-size: 12px;
+            box-shadow: none;
+            border: none;
+            overflow: visible;
+            height: auto;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .print-modal .page-break {
+            page-break-inside: avoid;
+          }
+          /* Force modal to be printed as block */
+          .print-modal {
+            display: block !important;
+          }
+        }
+      `}</style>
+
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto no-print">
+        <div className="print-modal bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="bg-[#002868] text-white p-4 sm:p-6 flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <img src="/imm_badge.png" alt="RIMS" className="h-12 w-auto" />
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Refugee Immigration Management System</h2>
+                <p className="text-sm text-[#FFC72C]">Republic of Liberia – Official Registration Record</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="bg-white/10 p-2 rounded-full hover:bg-white/20">
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Scrollable form content */}
+          <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+            {/* Header with photo on right */}
+            <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
+              <div className="flex-1">
+                <div className="border-l-4 border-[#FFC72C] pl-4">
+                  <h1 className="text-2xl font-bold uppercase">Refugee Registration Form</h1>
+                  <p className="text-sm text-gray-600">All fields are official record</p>
                 </div>
-             </div>
-             <button onClick={onClose} className="p-2 sm:p-4 bg-white/10 rounded-full hover:bg-white/20 transition-all"><X size={20} className="sm:w-7 sm:h-7"/></button>
+              </div>
+              {/* Photo placeholder */}
+              <div className="flex-shrink-0">
+                {record.remote_photo_url ? (
+                  <img src={record.remote_photo_url} alt="Refugee photo" className="w-32 h-32 object-cover border-2 border-gray-300 rounded-md shadow" />
+                ) : (
+                  <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs">
+                    Photo not available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Section: Basic Bio Data */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Basic Bio Data</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Full Name" value={`${record.first_name || ''} ${record.last_name || ''}`.trim()} />
+                <FormBox label="Unique ID" value={record.unique_id || '—'} />
+                <FormBox label="Date of Birth" value={formatDate(record.date_of_birth)} />
+                <FormBox label="Gender" value={record.gender || '—'} />
+                <FormBox label="Nationality" value={record.nationality || '—'} />
+                <FormBox label="Country of Origin" value={record.country_of_origin || '—'} />
+                <FormBox label="Phone Number" value={record.phone_number || '—'} />
+                <FormBox label="Email Address" value={record.email_address || '—'} />
+              </div>
+            </div>
+
+            {/* Section: Classification (Program Type & Category) */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Registration Classification</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Program Type" value={record.program_type || '—'} />
+                <FormBox label="Category" value={record.category || '—'} />
+              </div>
+            </div>
+
+            {/* Section: Residence & Location */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Residence & Location</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="County" value={record.county_of_residence || '—'} />
+                <FormBox label="District" value={record.district_of_residence || '—'} />
+                <FormBox label="Town / Village" value={record.town_or_village || '—'} />
+                <FormBox label="GPS Coordinates" value={record.gps_latitude && record.gps_longitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—'} />
+              </div>
+            </div>
+
+            {/* Section: Travel Document */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Travel Document</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormBox label="Document Type" value={record.travel_document_type || '—'} />
+                <FormBox label="Document Number" value={record.travel_document_number || '—'} />
+                <FormBox label="Date of Issue" value={formatDate(record.date_of_issue)} />
+                <FormBox label="Date of Expiry" value={formatDate(record.date_of_expiry)} />
+              </div>
+            </div>
+
+            {/* Relief Assistance (checkboxes) */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Relief Assistance Provided</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {reliefOptions.map(option => (
+                  <div key={option} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedRelief.includes(option)}
+                      readOnly
+                      disabled
+                      className="w-4 h-4 text-[#002868]"
+                    />
+                    <span className="text-sm">{option}</span>
+                  </div>
+                ))}
+                {selectedRelief.filter(r => !reliefOptions.includes(r)).map(other => (
+                  <div key={other} className="flex items-center gap-2 col-span-2">
+                    <input type="checkbox" checked readOnly disabled className="w-4 h-4" />
+                    <span className="text-sm italic">Other: {other}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reason for Migration */}
+            <div className="mb-8">
+              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Reason for Migration</h3>
+              <FormBox label="" value={record.reason_for_migration || '—'} fullWidth />
+            </div>
+
+            {/* Signature / footer */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm mt-4 border-t border-gray-200 pt-4">
+              <div>
+                <p className="font-semibold">Registered By:</p>
+                <p className="mt-1">Agent ID: {record.registered_by_agent_id || '—'}</p>
+                <p>Date: {formatDate(record.registration_timestamp)}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold">Sync Status: {record.sync_status || '—'}</p>
+                <p className="text-xs text-gray-400 mt-2">Generated by RIMS Command on {new Date().toLocaleString()}</p>
+              </div>
+            </div>
           </div>
-          <div className="p-6 sm:p-12 space-y-6 sm:space-y-10 overflow-y-auto flex-1">
-             <div className="grid grid-cols-2 gap-4 sm:gap-10">
-                <ProfileItem label="Nationality" value={record.nationality} icon={<Globe size={12}/>}/>
-                <ProfileItem label="Origin" value={record.country_of_origin} icon={<MapIcon size={12}/>}/>
-                <ProfileItem label="County" value={record.county_of_residence} icon={<MapPin size={12}/>}/>
-                <ProfileItem label="District" value={record.district_of_residence} icon={<MapPin size={12}/>}/>
-                <ProfileItem label="Gender" value={record.gender} icon={<User size={12}/>}/>
-                <ProfileItem label="Birth Date" value={record.date_of_birth ? new Date(record.date_of_birth).toLocaleDateString() : 'N/A'} icon={<Calendar size={12}/>}/>
-             </div>
-             <hr className="my-2 border-gray-100" />
-             <div className="grid grid-cols-2 gap-4 sm:gap-6">
-                <ProfileItem label="Travel Document" value={`${record.travel_document_type || ''} ${record.travel_document_number || ''}`.trim() || 'N/A'} icon={<Hash size={12}/>} />
-                <ProfileItem label="Issue/Expiry" value={`${record.date_of_issue ? new Date(record.date_of_issue).toLocaleDateString() : 'N/A'} → ${record.date_of_expiry ? new Date(record.date_of_expiry).toLocaleDateString() : 'N/A'}`} icon={<Calendar size={12}/>} />
-                <ProfileItem label="GPS" value={record.gps_latitude && record.gps_longitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : 'Not captured'} icon={<MapPin size={12}/>} />
-                <ProfileItem label="Agent ID" value={record.registered_by_agent_id || 'N/A'} icon={<User size={12}/>} />
-                <ProfileItem label="Sync Status" value={record.sync_status} icon={<CheckCircle2 size={12}/>} />
-                <ProfileItem label="Registered" value={new Date(record.registration_timestamp).toLocaleString()} icon={<Calendar size={12}/>} />
-             </div>
-             <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl sm:rounded-3xl space-y-2 border border-slate-100">
-                <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Relief Status</p>
-                <p className="font-black text-[#002868] uppercase text-sm sm:text-base">{record.relief_assistance || 'NONE'}</p>
-             </div>
+
+          {/* Buttons */}
+          <div className="p-4 border-t border-gray-100 flex justify-end gap-3 no-print">
+            <button
+              onClick={() => window.print()}
+              className="bg-[#002868] text-white px-6 py-2 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-[#001a4f] flex items-center gap-2"
+            >
+              <Printer size={16} /> Save as PDF
+            </button>
+            <button
+              onClick={onClose}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-black uppercase text-sm hover:bg-gray-300"
+            >
+              Close
+            </button>
           </div>
-          <div className="p-6 sm:p-10 border-t border-slate-100 flex justify-end">
-             <button onClick={onClose} className="bg-[#002868] text-white px-8 sm:px-12 py-3 sm:py-5 rounded-2xl font-black uppercase text-xs sm:text-sm tracking-[0.3em] shadow-xl">Dismiss</button>
-          </div>
-       </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Helper for a form box (label + value inside a bordered div)
+function FormBox({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
+  return (
+    <div className={fullWidth ? "col-span-full" : ""}>
+      <div className="text-xs font-semibold text-gray-500 mb-1">{label}</div>
+      <div className="border border-gray-300 rounded-md p-2 bg-gray-50 min-h-[2.5rem] text-sm">
+        {value || '—'}
+      </div>
+    </div>
+  );
+}
+
+// Helper for a label–value row
+function FormRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-1">
+      <span className="font-semibold text-gray-700 w-32 text-sm">{label}:</span>
+      <span className="text-gray-800 text-sm">{value || '—'}</span>
+    </div>
+  );
+}
+
+// Helper component to display a labelled field
+function FormField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
+      <span className="text-base font-medium text-gray-800">{value || '—'}</span>
     </div>
   );
 }
