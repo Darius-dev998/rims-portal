@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -38,8 +39,7 @@ export default function CommandPortal() {
       setSession(session);
       setLoading(false);
       if (session) {
-        // ROLE CHECK: only allow specific emails – CHANGE THESE TO YOUR MINISTER'S EMAIL(S)
-        const authorizedEmails = ['minister@example.com', 'admin@liberia.gov']; // UPDATE THIS
+        const authorizedEmails = ['minister@example.com', 'admin@liberia.gov']; 
        if (!session.user.email || !authorizedEmails.includes(session.user.email)) {
           toast.error('You are not authorized to access this portal.');
           supabase.auth.signOut();
@@ -112,16 +112,15 @@ export default function CommandPortal() {
   if (loading) return <div className="h-screen flex items-center justify-center bg-[#002868]"><Loader2 className="animate-spin text-[#FFC72C] w-12 h-12" /></div>;
   if (!session) return <LoginScreen />;
   
-{/* images for the header */}
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC]">
       <header className="bg-[#002868] text-white p-3 sm:p-4 shadow-2xl flex flex-wrap justify-between items-center gap-2 px-3 sm:px-10 border-b-4 border-[#FFC72C] sticky top-0 z-50">
-  <div className="flex items-center gap-0.5 sm:gap-2 flex-wrap justify-center">
+        <div className="flex items-center gap-0.5 sm:gap-2 flex-wrap justify-center">
           <img src="/imm_badge.png" alt="Immigration Badge" className="h-8 sm:h-12 w-auto rounded-full" />
-    <div className="flex gap-0.5 sm:gap-2">
-      <img src="/nir_logo.png" alt="NIR Logo" className="h-8 sm:h-12 w-auto object-contain rounded-full" />
-      <img src="/lrrrc_logo.png" alt="LRRRC Logo" className="h-8 sm:h-12 w-auto object-contain rounded-full" />
-    </div>
+          <div className="flex gap-0.5 sm:gap-2">
+            <img src="/nir_logo.png" alt="NIR Logo" className="h-8 sm:h-12 w-auto object-contain rounded-full" />
+            <img src="/lrrrc_logo.png" alt="LRRRC Logo" className="h-8 sm:h-12 w-auto object-contain rounded-full" />
+          </div>
           <div>
             <h1 className="font-black text-xl sm:text-2xl leading-none tracking-tighter">RIMS PORTAL</h1>
             <p className="text-[8px] sm:text-[10px] font-bold text-[#FFC72C] tracking-[0.2em] uppercase">Republic of Liberia</p>
@@ -141,42 +140,38 @@ export default function CommandPortal() {
   );
 }
 
-// ── DASHBOARD ──
 function Dashboard({ setView, totalRecords, pendingSync }: any) {
   return (
     <div className="space-y-8 sm:space-y-12 animate-in fade-in duration-700">
       <div className="bg-white rounded-2xl sm:rounded-[3.5rem] p-4 sm:p-14 shadow-2xl flex flex-col sm:flex-row items-center justify-between border border-slate-50 gap-6 sm:gap-8">
-  <div className="flex items-center gap-2 sm:gap-7 flex-wrap justify-center">
-    <img src="/imm_badge.png" alt="Immigration Badge" className="w-20 sm:w-32 h-auto rounded-full" />
-            {/* Placeholders for two additional images */}
-         <div className="flex gap-1 sm:gap-3">
-  <img src="/nid_logo.png?v=1" alt="NIR Logo" className="w-24 sm:w-32 h-auto object-contain" />
-<img src="/ref_logo.png?v=1" alt="LRRRC Logo" className="w-24 sm:w-32 h-auto object-contain" />
-</div>
-            <div className="text-center sm:text-left">
-              <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
-              <h2 className="text-3xl sm:text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Authorized Access</h2>
-              <p className="text-slate-400 font-bold text-sm sm:text-base mt-3 flex items-center justify-center sm:justify-start gap-2"><MapPin size={16}/> Republic of Liberia • LRRRC</p>
-            </div>
+        <div className="flex items-center gap-2 sm:gap-7 flex-wrap justify-center">
+          <img src="/imm_badge.png" alt="Immigration Badge" className="w-20 sm:w-32 h-auto rounded-full" />
+          <div className="flex gap-1 sm:gap-3">
+            <img src="/nid_logo.png?v=1" alt="NIR Logo" className="w-24 sm:w-32 h-auto object-contain" />
+            <img src="/ref_logo.png?v=1" alt="LRRRC Logo" className="w-24 sm:w-32 h-auto object-contain" />
           </div>
-          <div className="bg-slate-50 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] text-center border border-slate-100 shadow-inner w-full sm:w-auto">
-             <p className="text-4xl sm:text-6xl font-black text-[#002868] leading-none tracking-tighter italic">{totalRecords}</p>
-             <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest mt-2">Total Enrolled</p>
-             <hr className="my-2 border-slate-200" />
-             <p className="text-xl sm:text-2xl font-black text-[#002868]">{pendingSync}</p>
-             <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Pending Sync</p>
+          <div className="text-center sm:text-left">
+            <p className="text-[#002868] font-black text-xs sm:text-sm tracking-[0.5em] uppercase mb-3">National REFUGEE PORTAL</p>
+            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 uppercase tracking-tighter italic">Authorized Access</h2>
+            <p className="text-slate-400 font-bold text-sm sm:text-base mt-3 flex items-center justify-center sm:justify-start gap-2"><MapPin size={16}/> Republic of Liberia • LRRRC</p>
           </div>
-       </div>
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
-          <ActionTile title="Enroll Refugee" desc="Initialize full biographical and biometric capture workflow." icon={<UserPlus size={56}/>} color="bg-[#1B5E20]" onClick={() => setView('enroll')} />
-          <ActionTile title="Refugee Search" desc="Advanced forensic query of national records with sub-second latency." icon={<Search size={56}/>} color="bg-[#002868]" onClick={() => setView('search')} />
-       </div>
+        </div>
+        <div className="bg-slate-50 p-6 sm:p-10 rounded-2xl sm:rounded-[3rem] text-center border border-slate-100 shadow-inner w-full sm:w-auto">
+          <p className="text-4xl sm:text-6xl font-black text-[#002868] leading-none tracking-tighter italic">{totalRecords}</p>
+          <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest mt-2">Total Enrolled</p>
+          <hr className="my-2 border-slate-200" />
+          <p className="text-xl sm:text-2xl font-black text-[#002868]">{pendingSync}</p>
+          <p className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">Pending Sync</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12">
+        <ActionTile title="Enroll Refugee" desc="Initialize full biographical and biometric capture workflow." icon={<UserPlus size={56}/>} color="bg-[#1B5E20]" onClick={() => setView('enroll')} />
+        <ActionTile title="Refugee Search" desc="Advanced forensic query of national records with sub-second latency." icon={<Search size={56}/>} color="bg-[#002868]" onClick={() => setView('search')} />
+      </div>
     </div>
   );
 }
 
-// ── SEARCH PORTAL (manual search) ──
-// ── SEARCH PORTAL (manual search, custom dropdowns, consistent heights) ──
 function SearchPortal({ setView, onSelectRecord }: any) {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -301,117 +296,55 @@ function SearchPortal({ setView, onSelectRecord }: any) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-4xl sm:text-6xl font-black text-[#002868] tracking-tighter uppercase">Refugee Registry</h2>
         <div className="flex gap-3">
-          <button
-            onClick={exportToCSV}
-            className="font-black text-[#002868] bg-[#FFC72C] px-5 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-lg uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2"
-          >
-            <Download size={16}/> Export CSV
-          </button>
+          <button onClick={exportToCSV} className="font-black text-[#002868] bg-[#FFC72C] px-5 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-lg uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2"><Download size={16}/> Export CSV</button>
           <button onClick={() => setView('dashboard')} className="font-black text-[#002868] bg-[#FFC72C] px-5 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-lg uppercase text-xs sm:text-sm tracking-widest flex items-center gap-2">← Dashboard</button>
         </div>
       </div>
 
       <div className="bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[3rem] shadow-2xl border border-slate-100 space-y-4 sm:space-y-6">
-         {/* Search input – height matched to filter cards */}
          <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20}/>
-            <input
-              value={filters.query}
-              onChange={(e) => setFilters({...filters, query: e.target.value})}
-              placeholder="Forensic Name Search..."
-              className="w-full pl-12 pr-4 p-4 sm:p-6 bg-slate-50 rounded-2xl font-bold outline-none border border-slate-100 focus:ring-4 ring-[#002868]/5 transition-all text-sm sm:text-base"
-            />
+            <input value={filters.query} onChange={(e) => setFilters({...filters, query: e.target.value})} placeholder="Forensic Name Search..." className="w-full pl-12 pr-4 p-4 sm:p-6 bg-slate-50 rounded-2xl font-bold outline-none border border-slate-100 focus:ring-4 ring-[#002868]/5 transition-all text-sm sm:text-base" />
          </div>
-
-         {/* First row: County, District, Nationality, Relief */}
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">County</span>
-              <CustomDropdown
-                options={COUNTIES}
-                value={filters.county}
-                onChange={(v: string) => setFilters({...filters, county: v, district: ''})}
-                placeholder="County"
-              />
+              <CustomDropdown options={COUNTIES} value={filters.county} onChange={(v: string) => setFilters({...filters, county: v, district: ''})} placeholder="County" />
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">District</span>
-              <CustomDropdown
-                options={DISTRICTS_BY_COUNTY[filters.county] || ALL_DISTRICTS}
-                value={filters.district}
-                onChange={(v: string) => setFilters({...filters, district: v})}
-                placeholder="District"
-              />
+              <CustomDropdown options={DISTRICTS_BY_COUNTY[filters.county] || ALL_DISTRICTS} value={filters.district} onChange={(v: string) => setFilters({...filters, district: v})} placeholder="District" />
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Nationality</span>
-              <CustomDropdown
-                options={ALL_NATIONALITIES}
-                value={filters.nationality}
-                onChange={(v: string) => setFilters({...filters, nationality: v})}
-                placeholder="Nationality"
-              />
+              <CustomDropdown options={ALL_NATIONALITIES} value={filters.nationality} onChange={(v: string) => setFilters({...filters, nationality: v})} placeholder="Nationality" />
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Relief</span>
-              <CustomDropdown
-                options={RELIEF_OPTIONS}
-                value={filters.relief}
-                onChange={(v: string) => setFilters({...filters, relief: v})}
-                placeholder="Relief"
-              />
+              <CustomDropdown options={RELIEF_OPTIONS} value={filters.relief} onChange={(v: string) => setFilters({...filters, relief: v})} placeholder="Relief" />
             </div>
          </div>
-
-         {/* Second row: ID Number, Town, Gender, Agent ID */}
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <FormInput label="ID Number" value={filters.uniqueId} onChange={(v:any) => setFilters({...filters, uniqueId: v})} />
             <FormInput label="Town" value={filters.town} onChange={(v:any) => setFilters({...filters, town: v})} />
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Gender</span>
-              <CustomDropdown
-                options={GENDER_OPTIONS}
-                value={filters.gender}
-                onChange={(v: string) => setFilters({...filters, gender: v})}
-                placeholder="Gender"
-              />
+              <CustomDropdown options={GENDER_OPTIONS} value={filters.gender} onChange={(v: string) => setFilters({...filters, gender: v})} placeholder="Gender" />
             </div>
             <FormInput label="Agent ID" value={filters.agentId} onChange={(v:any) => setFilters({...filters, agentId: v})} />
          </div>
-
-         {/* Third row: Reason, Document Type, and buttons */}
          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Reason</span>
-              <CustomDropdown
-                options={REASON_OPTIONS}
-                value={filters.reason}
-                onChange={(v: string) => setFilters({...filters, reason: v})}
-                placeholder="Reason"
-              />
+              <CustomDropdown options={REASON_OPTIONS} value={filters.reason} onChange={(v: string) => setFilters({...filters, reason: v})} placeholder="Reason" />
             </div>
             <div className="flex flex-col gap-2">
               <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">Document Type</span>
-              <CustomDropdown
-                options={TRAVEL_DOC_OPTIONS}
-                value={filters.docType}
-                onChange={(v: string) => setFilters({...filters, docType: v})}
-                placeholder="Document Type"
-              />
+              <CustomDropdown options={TRAVEL_DOC_OPTIONS} value={filters.docType} onChange={(v: string) => setFilters({...filters, docType: v})} placeholder="Document Type" />
             </div>
             <div className="col-span-2 flex justify-end gap-3">
-              <button
-                onClick={clearFilters}
-                className="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all"
-              >
-                Clear All Filters
-              </button>
-              <button
-                onClick={handleSearch}
-                className="bg-[#002868] text-white px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#001a4f] transition-all flex items-center gap-2"
-              >
-                <Search size={14}/> Search
-              </button>
+              <button onClick={clearFilters} className="bg-red-50 text-red-600 px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-red-100 transition-all">Clear All Filters</button>
+              <button onClick={handleSearch} className="bg-[#002868] text-white px-6 py-2 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#001a4f] transition-all flex items-center gap-2"><Search size={14}/> Search</button>
             </div>
          </div>
       </div>
@@ -449,23 +382,9 @@ function SearchPortal({ setView, onSelectRecord }: any) {
           </div>
 
           <div className="flex justify-between items-center mt-6 sm:mt-8">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-sm sm:text-base font-bold text-gray-500">
-              Page {page} of {Math.ceil(totalCount / pageSize) || 1} ({totalCount} records)
-            </span>
-            <button
-              onClick={() => setPage(p => p + 1)}
-              disabled={page * pageSize >= totalCount}
-              className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50"
-            >
-              Next
-            </button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50">Previous</button>
+            <span className="text-sm sm:text-base font-bold text-gray-500">Page {page} of {Math.ceil(totalCount / pageSize) || 1} ({totalCount} records)</span>
+            <button onClick={() => setPage(p => p + 1)} disabled={page * pageSize >= totalCount} className="px-4 sm:px-6 py-2 bg-gray-100 rounded-xl font-black text-xs sm:text-sm uppercase disabled:opacity-50">Next</button>
           </div>
         </>
       )}
@@ -473,48 +392,24 @@ function SearchPortal({ setView, onSelectRecord }: any) {
   );
 }
 
-// CustomDropdown component – replaces native select, opens on click anywhere
 function CustomDropdown({ options, value, onChange, placeholder }: any) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const filtered = useMemo(() => 
-    options.filter((o: string) => o.toLowerCase().includes(search.toLowerCase())),
-    [search, options]
-  );
+  const filtered = useMemo(() => options.filter((o: string) => o.toLowerCase().includes(search.toLowerCase())), [search, options]);
 
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl text-left font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner flex justify-between items-center"
-      >
+      <button onClick={() => setOpen(!open)} className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl text-left font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner flex justify-between items-center">
         <span>{value || `Select ${placeholder}`}</span>
         <ChevronDown className={`transition-transform ${open ? 'rotate-180' : ''}`} size={16} />
       </button>
       {open && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white shadow-2xl rounded-2xl z-[60] max-h-60 overflow-y-auto border border-slate-100 p-2">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search..."
-            className="w-full p-2 mb-2 border rounded-lg text-sm"
-            autoFocus
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="w-full p-2 mb-2 border rounded-lg text-sm" autoFocus />
           <div>
-            <button
-              onClick={() => { onChange(''); setOpen(false); setSearch(''); }}
-              className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all"
-            >
-              All {placeholder}s
-            </button>
+            <button onClick={() => { onChange(''); setOpen(false); setSearch(''); }} className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all">All {placeholder}s</button>
             {filtered.map((o: string) => (
-              <button
-                key={o}
-                onClick={() => { onChange(o); setOpen(false); setSearch(''); }}
-                className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all"
-              >
-                {o}
-              </button>
+              <button key={o} onClick={() => { onChange(o); setOpen(false); setSearch(''); }} className="w-full text-left p-3 font-bold text-sm hover:bg-[#002868] hover:text-white rounded-xl transition-all">{o}</button>
             ))}
           </div>
         </div>
@@ -523,7 +418,6 @@ function CustomDropdown({ options, value, onChange, placeholder }: any) {
   );
 }
 
-// ── ENROLLMENT WIZARD (unchanged, but with increased font sizes) ──
 function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize, isSaving }: any) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -635,7 +529,8 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
     </div>
   );
 }
-// ── PROFILE FORM ──
+
+// ── PROFILE FORM (FIXED PDF DOWNLOAD) ──
 function ProfileDialog({ record, onClose }: any) {
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return '—';
@@ -650,416 +545,262 @@ function ProfileDialog({ record, onClose }: any) {
     : [];
 
   const handlePrint = async () => {
-    // ── 1. Pre-fetch the photo and convert to base64 BEFORE opening print window ──
-    let photoSrc = '';
+    const toastId = toast.loading('Generating official PDF record...');
+    
+    // 1. Photo fetch as Base64 (to ensure it appears in PDF)
+    let photoBase64 = '';
     if (record.remote_photo_url) {
       try {
         const response = await fetch(record.remote_photo_url);
         const blob = await response.blob();
-        photoSrc = await new Promise<string>((resolve, reject) => {
+        photoBase64 = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
           reader.readAsDataURL(blob);
         });
       } catch (err) {
-        console.warn('Could not load photo for print:', err);
-        photoSrc = '';
+        console.warn('Photo fetch failed', err);
       }
     }
 
-    // ── 2. Open the print window only after photo is ready ──
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Please allow pop-ups to print');
+    // 2. Load html2pdf dynamically
+    let html2pdf;
+    try {
+      // @ts-ignore
+      const mod = await import('html2pdf.js');
+      html2pdf = mod.default;
+    } catch (e) {
+      toast.error('PDF Library not found. Run: npm install html2pdf.js', { id: toastId });
       return;
     }
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Refugee Registration Record</title>
-        <meta charset="utf-8" />
-        <style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0.2in;              /* was 0.5in – reduces page count */
-    padding: 0;
-    color: #000;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    border-bottom: 2px solid #002868;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-  }
-  .logo { max-height: 50px; }   /* slightly smaller */
-  .title { text-align: right; }
-  h1 { font-size: 16px; margin: 0; color: #002868; }
-  h2 { font-size: 12px; margin: 5px 0; }
-  .section {
-    margin-bottom: 15px;
-    page-break-inside: avoid;   /* prevents sections from breaking across pages */
-  }
-  .section-title {
-    background-color: #f0f0f0;
-    padding: 4px 8px;
-    font-weight: bold;
-    border-left: 4px solid #002868;
-    margin-bottom: 8px;
-    font-size: 13px;
-  }
-  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .field { margin-bottom: 6px; }
-  .field-label { font-weight: bold; font-size: 10px; color: #555; }
-  .field-value { font-size: 11px; border-bottom: 1px solid #ccc; padding: 2px 0; }
-  .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px; }
-  .checkbox-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
-  .photo-block { text-align: right; margin-bottom: 15px; }
-  .photo { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ccc; }
-  .photo-placeholder {
-    display: inline-flex;
-    width: 80px;
-    height: 80px;
-    border: 1px dashed #ccc;
-    align-items: center;
-    justify-content: center;
-    font-size: 9px;
-    color: #999;
-  }
-  .footer {
-    margin-top: 20px;
-    font-size: 9px;
-    text-align: center;
-    border-top: 1px solid #ccc;
-    padding-top: 8px;
-  }
-  @media print {
-    body { margin: 0.1in; }
-  }
-</style>
-      </head>
-      <body>
-        <div class="header">
-          <div>
-            <img src="${window.location.origin}/imm_badge.png" class="logo" alt="RIMS" />
-          </div>
-          <div class="title">
-            <h1>Refugee Immigration Management System</h1>
-            <h2>Republic of Liberia – Official Registration Record</h2>
+    // 3. Create PDF Template
+    const element = document.createElement('div');
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: Arial, sans-serif; color: #333; background: white; width: 750px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #002868; padding-bottom: 15px; margin-bottom: 25px;">
+          <img src="${window.location.origin}/imm_badge.png" style="height: 60px;" />
+          <div style="text-align: right;">
+            <h1 style="margin: 0; color: #002868; font-size: 18px; font-weight: 900; text-transform: uppercase;">Refugee Immigration Management System</h1>
+            <h2 style="margin: 5px 0 0; font-size: 12px; color: #666; font-weight: bold;">Republic of Liberia – Official Registration Record</h2>
           </div>
         </div>
 
-        <div class="photo-block">
-          ${photoSrc
-            ? `<img src="${photoSrc}" class="photo" alt="Registrant photo" />`
-            : `<div class="photo-placeholder">No Photo</div>`
-          }
-        </div>
-
-        <div class="section">
-          <div class="section-title">Registration Classification</div>
-          <div class="grid">
-            <div class="field"><div class="field-label">Program Type</div><div class="field-value">${record.program_type || '—'}</div></div>
-            <div class="field"><div class="field-label">Category</div><div class="field-value">${record.category || '—'}</div></div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px; gap: 40px;">
+          <div style="flex: 1;">
+            <h3 style="font-size: 26px; margin: 0 0 15px; color: #111; font-weight: 900; text-transform: uppercase;">Refugee Registration Form</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+               <div>
+                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold;">Full Name</div>
+                  <div style="font-size: 14px; font-weight: bold; color: #000; border-bottom: 1px solid #eee;">${record.first_name || ''} ${record.last_name || ''}</div>
+               </div>
+               <div>
+                  <div style="font-size: 10px; color: #888; text-transform: uppercase; font-weight: bold;">Unique ID</div>
+                  <div style="font-size: 14px; font-weight: bold; color: #002868; border-bottom: 1px solid #eee;">${record.unique_id || '—'}</div>
+               </div>
+            </div>
+          </div>
+          <div style="flex-shrink: 0;">
+            ${photoBase64 ? `<img src="${photoBase64}" style="width: 130px; height: 130px; object-fit: cover; border: 4px solid #f8f8f8; border-radius: 12px;" />` : `<div style="width: 130px; height: 130px; border: 2px dashed #ddd; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #aaa;">No Photo</div>`}
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title">Basic Bio Data</div>
-          <div class="grid">
-            <div class="field"><div class="field-label">Full Name</div><div class="field-value">${record.first_name || ''} ${record.last_name || ''}</div></div>
-            <div class="field"><div class="field-label">Unique ID</div><div class="field-value">${record.unique_id || '—'}</div></div>
-            <div class="field"><div class="field-label">Date of Birth</div><div class="field-value">${formatDate(record.date_of_birth)}</div></div>
-            <div class="field"><div class="field-label">Gender</div><div class="field-value">${record.gender || '—'}</div></div>
-            <div class="field"><div class="field-label">Nationality</div><div class="field-value">${record.nationality || '—'}</div></div>
-            <div class="field"><div class="field-label">Country of Origin</div><div class="field-value">${record.country_of_origin || '—'}</div></div>
-            <div class="field"><div class="field-label">Phone Number</div><div class="field-value">${record.phone_number || '—'}</div></div>
-            <div class="field"><div class="field-label">Email Address</div><div class="field-value">${record.email_address || '—'}</div></div>
+        ${renderPdfSection("Classification & Identity", [
+          ["Program Type", record.program_type],
+          ["Category", record.category],
+          ["Nationality", record.nationality],
+          ["Gender", record.gender],
+          ["Date of Birth", formatDate(record.date_of_birth)],
+          ["Country of Origin", record.country_of_origin]
+        ])}
+
+        ${renderPdfSection("Contact & Residence", [
+          ["County", record.county_of_residence],
+          ["District", record.district_of_residence],
+          ["Town/Village", record.town_or_village],
+          ["Phone Number", record.phone_number],
+          ["Email Address", record.email_address],
+          ["GPS Coordinates", record.gps_latitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—']
+        ])}
+
+        ${renderPdfSection("Travel Documentation", [
+          ["Document Type", record.travel_document_type],
+          ["Document Number", record.travel_document_number],
+          ["Issue Date", formatDate(record.date_of_issue)],
+          ["Expiry Date", formatDate(record.date_of_expiry)]
+        ])}
+
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f1f5f9; padding: 8px 15px; font-weight: 900; font-size: 12px; color: #002868; text-transform: uppercase; border-left: 5px solid #FFC72C; margin-bottom: 12px;">Relief & Migration Details</div>
+          <div style="display: grid; grid-template-columns: 1fr; gap: 15px; padding: 0 10px;">
+            <div><div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">Assistance Provided</div><div style="font-size: 12px;">${record.relief_assistance || 'None'}</div></div>
+            <div><div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">Reason for Migration</div><div style="font-size: 12px; line-height: 1.4;">${record.reason_for_migration || '—'}</div></div>
           </div>
         </div>
 
-        <div class="section">
-          <div class="section-title">Residence & Location</div>
-          <div class="grid">
-            <div class="field"><div class="field-label">County</div><div class="field-value">${record.county_of_residence || '—'}</div></div>
-            <div class="field"><div class="field-label">District</div><div class="field-value">${record.district_of_residence || '—'}</div></div>
-            <div class="field"><div class="field-label">Town/Village</div><div class="field-value">${record.town_or_village || '—'}</div></div>
-            <div class="field"><div class="field-label">GPS</div><div class="field-value">${record.gps_latitude && record.gps_longitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—'}</div></div>
-          </div>
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div><div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Agent ID</div><div style="font-size: 11px; font-weight: bold;">${record.registered_by_agent_id || 'SYSTEM'}</div></div>
+          <div style="text-align: center;"><div style="font-size: 10px; color: #64748b; font-weight: bold;">Official RIMS Record</div></div>
+          <div style="text-align: right;"><div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Generated</div><div style="font-size: 11px; font-weight: bold;">${new Date().toLocaleString()}</div></div>
         </div>
-
-        <div class="section">
-          <div class="section-title">Travel Document</div>
-          <div class="grid">
-            <div class="field"><div class="field-label">Document Type</div><div class="field-value">${record.travel_document_type || '—'}</div></div>
-            <div class="field"><div class="field-label">Document Number</div><div class="field-value">${record.travel_document_number || '—'}</div></div>
-            <div class="field"><div class="field-label">Date of Issue</div><div class="field-value">${formatDate(record.date_of_issue)}</div></div>
-            <div class="field"><div class="field-label">Date of Expiry</div><div class="field-value">${formatDate(record.date_of_expiry)}</div></div>
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Relief Assistance Provided</div>
-          <div class="checkbox-group">
-            ${reliefOptions.map(opt =>
-              `<div class="checkbox-item">
-                 <input type="checkbox" ${selectedRelief.includes(opt) ? 'checked' : ''} disabled />
-                 <label>${opt}</label>
-               </div>`
-            ).join('')}
-            ${selectedRelief
-              .filter(r => !reliefOptions.includes(r))
-              .map(other =>
-                `<div class="checkbox-item">
-                   <input type="checkbox" checked disabled />
-                   <label>Other: ${other}</label>
-                 </div>`
-              ).join('')}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Reason for Migration</div>
-          <div class="field-value">${record.reason_for_migration || '—'}</div>
-        </div>
-
-        <div class="section">
-          <div class="section-title">Registration Info</div>
-          <div class="grid">
-            <div class="field"><div class="field-label">Registered By (Agent ID)</div><div class="field-value">${record.registered_by_agent_id || '—'}</div></div>
-            <div class="field"><div class="field-label">Registration Date</div><div class="field-value">${formatDate(record.registration_timestamp)}</div></div>
-            <div class="field"><div class="field-label">Sync Status</div><div class="field-value">${record.sync_status || '—'}</div></div>
-          </div>
-        </div>
-
-        <div class="footer">
-          This is an official record of the Liberia Refugee Immigration Management System (RIMS).<br/>
-          Generated on ${new Date().toLocaleString()}
-        </div>
-      </body>
-      </html>
+      </div>
     `;
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    function renderPdfSection(title: string, fields: [string, any][]) {
+      return `
+        <div style="margin-bottom: 25px;">
+          <div style="background: #f1f5f9; padding: 8px 15px; font-weight: 900; font-size: 12px; color: #002868; text-transform: uppercase; border-left: 5px solid #FFC72C; margin-bottom: 12px;">${title}</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; padding: 0 10px;">
+            ${fields.map(([label, value]) => `
+              <div>
+                <div style="font-size: 9px; color: #888; text-transform: uppercase; font-weight: bold;">${label}</div>
+                <div style="font-size: 12px; font-weight: 600; border-bottom: 1px solid #f1f5f9;">${value || '—'}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
 
-    // ── 3. All content is already inline (base64), so onload fires with everything ready ──
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
+    const options = {
+      margin: 0,
+      filename: `RIMS_Record_${record.unique_id}.pdf`,
+      image: { type: 'jpeg' as const, quality: 1 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
     };
+
+    try {
+      await html2pdf().from(element).set(options).save();
+      toast.success('PDF downloaded successfully!', { id: toastId });
+    } catch (err) {
+      toast.error('Failed to generate PDF', { id: toastId });
+    }
   };
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-
-          {/* Header */}
-          <div className="bg-[#002868] text-white p-4 sm:p-6 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <img src="/imm_badge.png" alt="RIMS" className="h-12 w-auto" />
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">
-                  Refugee Immigration Management System
-                </h2>
-                <p className="text-sm text-[#FFC72C]">Republic of Liberia – Official Registration Record</p>
-              </div>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="bg-[#002868] text-white p-4 sm:p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <img src="/imm_badge.png" alt="RIMS" className="h-12 w-auto" />
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter">Refugee Immigration Management System</h2>
+              <p className="text-sm text-[#FFC72C]">Republic of Liberia – Official Registration Record</p>
             </div>
-            <button onClick={onClose} className="bg-white/10 p-2 rounded-full hover:bg-white/20">
-              <X size={20} />
-            </button>
           </div>
+          <button onClick={onClose} className="bg-white/10 p-2 rounded-full hover:bg-white/20"><X size={20} /></button>
+        </div>
 
-          {/* Scrollable content */}
-          <div className="p-6 sm:p-8 overflow-y-auto flex-1">
-            <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
-              <div className="flex-1">
-                <div className="border-l-4 border-[#FFC72C] pl-4">
-                  <h1 className="text-2xl font-bold uppercase">Refugee Registration Form</h1>
-                  <p className="text-sm text-gray-600">All fields are official record</p>
-                </div>
-              </div>
-              <div className="flex-shrink-0">
-                {record.remote_photo_url ? (
-                  <img
-                    src={record.remote_photo_url}
-                    alt="Refugee photo"
-                    className="w-32 h-32 object-cover border-2 border-gray-300 rounded-md shadow"
-                  />
-                ) : (
-                  <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs">
-                    Photo not available
-                  </div>
-                )}
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1">
+          <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
+            <div className="flex-1">
+              <div className="border-l-4 border-[#FFC72C] pl-4">
+                <h1 className="text-2xl font-bold uppercase">Refugee Registration Form</h1>
+                <p className="text-sm text-gray-600">All fields are official record</p>
               </div>
             </div>
-
-            {/* Registration Classification */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Registration Classification
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormBox label="Program Type" value={record.program_type || '—'} />
-                <FormBox label="Category" value={record.category || '—'} />
-              </div>
-            </div>
-
-            {/* Basic Bio Data */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Basic Bio Data
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormBox label="Full Name" value={`${record.first_name || ''} ${record.last_name || ''}`} />
-                <FormBox label="Unique ID" value={record.unique_id || '—'} />
-                <FormBox label="Date of Birth" value={formatDate(record.date_of_birth)} />
-                <FormBox label="Gender" value={record.gender || '—'} />
-                <FormBox label="Nationality" value={record.nationality || '—'} />
-                <FormBox label="Country of Origin" value={record.country_of_origin || '—'} />
-                <FormBox label="Phone Number" value={record.phone_number || '—'} />
-                <FormBox label="Email Address" value={record.email_address || '—'} />
-              </div>
-            </div>
-
-            {/* Residence & Location */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Residence & Location
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormBox label="County" value={record.county_of_residence || '—'} />
-                <FormBox label="District" value={record.district_of_residence || '—'} />
-                <FormBox label="Town/Village" value={record.town_or_village || '—'} />
-                <FormBox
-                  label="GPS"
-                  value={
-                    record.gps_latitude && record.gps_longitude
-                      ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}`
-                      : '—'
-                  }
-                />
-              </div>
-            </div>
-
-            {/* Travel Document */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Travel Document
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormBox label="Document Type" value={record.travel_document_type || '—'} />
-                <FormBox label="Document Number" value={record.travel_document_number || '—'} />
-                <FormBox label="Date of Issue" value={formatDate(record.date_of_issue)} />
-                <FormBox label="Date of Expiry" value={formatDate(record.date_of_expiry)} />
-              </div>
-            </div>
-
-            {/* Relief Assistance */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Relief Assistance Provided
-              </h3>
-              <div className="flex flex-wrap gap-4">
-                {reliefOptions.map(opt => (
-                  <label key={opt} className="flex items-center gap-2 text-sm">
-                    <input type="checkbox" checked={selectedRelief.includes(opt)} readOnly />
-                    {opt}
-                  </label>
-                ))}
-                {selectedRelief
-                  .filter(r => !reliefOptions.includes(r))
-                  .map(other => (
-                    <label key={other} className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked readOnly />
-                      Other: {other}
-                    </label>
-                  ))}
-              </div>
-            </div>
-
-            {/* Reason for Migration */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Reason for Migration
-              </h3>
-              <p className="text-sm text-gray-700">{record.reason_for_migration || '—'}</p>
-            </div>
-
-            {/* Registration Info */}
-            <div className="mb-8">
-              <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">
-                Registration Info
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormBox label="Registered By (Agent ID)" value={record.registered_by_agent_id || '—'} />
-                <FormBox label="Registration Date" value={formatDate(record.registration_timestamp)} />
-                <FormBox label="Sync Status" value={record.sync_status || '—'} />
-              </div>
+            <div className="flex-shrink-0">
+              {record.remote_photo_url ? (
+                <img src={record.remote_photo_url} alt="Refugee" className="w-32 h-32 object-cover border-2 border-gray-300 rounded-md shadow" />
+              ) : (
+                <div className="w-32 h-32 bg-gray-100 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-400 text-xs">Photo not available</div>
+              )}
             </div>
           </div>
 
-          {/* Footer Buttons */}
-          <div className="p-4 border-t border-gray-100 flex justify-end gap-3">
-            <button
-              onClick={handlePrint}
-              className="bg-[#002868] text-white px-6 py-2 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-[#001a4f] flex items-center gap-2"
-            >
-              <Printer size={16} /> Save as PDF
-            </button>
-            <button
-              onClick={onClose}
-              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-black uppercase text-sm hover:bg-gray-300"
-            >
-              Close
-            </button>
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Registration Classification</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormBox label="Program Type" value={record.program_type || '—'} />
+              <FormBox label="Category" value={record.category || '—'} />
+            </div>
           </div>
 
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Basic Bio Data</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormBox label="Full Name" value={`${record.first_name || ''} ${record.last_name || ''}`} />
+              <FormBox label="Unique ID" value={record.unique_id || '—'} />
+              <FormBox label="Date of Birth" value={formatDate(record.date_of_birth)} />
+              <FormBox label="Gender" value={record.gender || '—'} />
+              <FormBox label="Nationality" value={record.nationality || '—'} />
+              <FormBox label="Country of Origin" value={record.country_of_origin || '—'} />
+              <FormBox label="Phone Number" value={record.phone_number || '—'} />
+              <FormBox label="Email Address" value={record.email_address || '—'} />
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Residence & Location</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormBox label="County" value={record.county_of_residence || '—'} />
+              <FormBox label="District" value={record.district_of_residence || '—'} />
+              <FormBox label="Town/Village" value={record.town_or_village || '—'} />
+              <FormBox label="GPS" value={record.gps_latitude && record.gps_longitude ? `${record.gps_latitude.toFixed(6)}, ${record.gps_longitude.toFixed(6)}` : '—'} />
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Travel Document</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormBox label="Document Type" value={record.travel_document_type || '—'} />
+              <FormBox label="Document Number" value={record.travel_document_number || '—'} />
+              <FormBox label="Date of Issue" value={formatDate(record.date_of_issue)} />
+              <FormBox label="Date of Expiry" value={formatDate(record.date_of_expiry)} />
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Relief Assistance Provided</h3>
+            <div className="flex flex-wrap gap-4">
+              {reliefOptions.map(opt => (
+                <label key={opt} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={selectedRelief.includes(opt)} readOnly /> {opt}
+                </label>
+              ))}
+              {selectedRelief.filter(r => !reliefOptions.includes(r)).map(other => (
+                <label key={other} className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked readOnly /> Other: {other}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Reason for Migration</h3>
+            <p className="text-sm text-gray-700">{record.reason_for_migration || '—'}</p>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-lg font-bold text-[#002868] border-b border-gray-200 pb-1 mb-4">Registration Info</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormBox label="Registered By (Agent ID)" value={record.registered_by_agent_id || '—'} />
+              <FormBox label="Registration Date" value={formatDate(record.registration_timestamp)} />
+              <FormBox label="Sync Status" value={record.sync_status || '—'} />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 flex justify-end gap-3">
+          <button onClick={handlePrint} className="bg-[#002868] text-white px-6 py-2 rounded-xl font-black uppercase text-sm tracking-wider hover:bg-[#001a4f] flex items-center gap-2">
+            <Printer size={16} /> Save as PDF
+          </button>
+          <button onClick={onClose} className="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl font-black uppercase text-sm hover:bg-gray-300">Close</button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
-// Helper for a form box (label + value inside a bordered div)
 function FormBox({ label, value, fullWidth }: { label: string; value: string; fullWidth?: boolean }) {
   return (
     <div className={fullWidth ? "col-span-full" : ""}>
       <div className="text-xs font-semibold text-gray-500 mb-1">{label}</div>
-      <div className="border border-gray-300 rounded-md p-2 bg-gray-50 min-h-[2.5rem] text-sm">
-        {value || '—'}
-      </div>
+      <div className="border border-gray-300 rounded-md p-2 bg-gray-50 min-h-[2.5rem] text-sm">{value || '—'}</div>
     </div>
   );
 }
 
-// Helper for a label–value row
-function FormRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-wrap items-baseline gap-1">
-      <span className="font-semibold text-gray-700 w-32 text-sm">{label}:</span>
-      <span className="text-gray-800 text-sm">{value || '—'}</span>
-    </div>
-  );
-}
-
-// Helper component to display a labelled field
-function FormField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{label}</span>
-      <span className="text-base font-medium text-gray-800">{value || '—'}</span>
-    </div>
-  );
-}
-
-// ── HELPER COMPONENTS (with increased font sizes) ──
 function ActionTile({ title, desc, icon, color, onClick }: any) {
   return (
     <button onClick={onClick} className={`${color} p-8 sm:p-16 rounded-3xl sm:rounded-[5rem] text-white text-left shadow-2xl hover:-translate-y-3 transition-all relative overflow-hidden group border-b-[12px] sm:border-b-[16px] border-black/20`}>
@@ -1088,28 +829,6 @@ function SmartSearch({ label, options, value, onChange }: any) {
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function MiniFilter({ label, options, value, onChange }: any) {
-  return (
-    <div className="bg-slate-50 p-2 sm:p-4 rounded-2xl flex flex-col gap-1 ring-1 ring-slate-200 relative">
-      <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent font-bold text-sm sm:text-base outline-none appearance-none cursor-pointer w-full pr-6 sm:pr-8">
-        <option value="">All {label}s</option>
-        {options.map((o:string) => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <ChevronDown className="absolute right-2 sm:right-4 bottom-2 sm:bottom-4 text-slate-300 pointer-events-none" size={14} />
-    </div>
-  );
-}
-
-function ProfileItem({ label, value, icon }: any) {
-  return (
-    <div>
-      <p className="text-xs sm:text-sm font-black text-slate-400 uppercase flex items-center gap-2 mb-1">{icon} {label}</p>
-      <p className="font-bold text-sm sm:text-base text-slate-800">{value || 'N/A'}</p>
     </div>
   );
 }
@@ -1151,36 +870,17 @@ function LoginScreen() {
   return (
     <div className="relative min-h-screen bg-[#002868] flex items-center justify-center p-4">
       <div className="absolute inset-0 flex items-center justify-center">
-        <img
-          src="/login_bg.png"
-          alt="Background"
-          className="w-full h-full object-contain object-center"
-        />
+        <img src="/login_bg.png" alt="Background" className="w-full h-full object-contain object-center" />
       </div>
       <div className="absolute inset-0 bg-black/20" />
       <div className="relative z-10 bg-white/10 backdrop-blur-md rounded-3xl sm:rounded-[5rem] border border-white/20 shadow-2xl max-w-md w-full text-center p-6 sm:p-12">
-        <img src="/imm_badge.png" alt="Immigration Badge" className="h-16 sm:h-20 mx-auto mb-4 sm:mb-6" />
+        <img src="/imm_badge.png" alt="Immigration" className="h-16 sm:h-20 mx-auto mb-4 sm:mb-6" />
         <h2 className="text-white text-3xl sm:text-4xl font-black uppercase tracking-tighter mb-2 italic">RIMS PORTAL</h2>
         <p className="text-[#FFC72C] text-xs sm:text-sm font-black tracking-[0.5em] mb-8 sm:mb-12 uppercase">National Access Gateway</p>
         <div className="space-y-4">
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none transition-all text-sm sm:text-base"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Access Key"
-            className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none transition-all text-sm sm:text-base"
-          />
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className="w-full bg-[#FFC72C] text-[#002868] py-3 sm:py-4 rounded-2xl font-black tracking-[0.3em] uppercase hover:bg-white transition-all shadow-lg mt-4 text-xs sm:text-sm"
-          >
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none text-sm sm:text-base" />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Access Key" className="w-full bg-white/10 border border-white/20 rounded-2xl py-3 sm:py-4 px-5 text-white font-bold outline-none text-sm sm:text-base" />
+          <button onClick={handleLogin} disabled={loading} className="w-full bg-[#FFC72C] text-[#002868] py-3 sm:py-4 rounded-2xl font-black tracking-[0.3em] uppercase hover:bg-white transition-all shadow-lg mt-4 text-xs sm:text-sm">
             {loading ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Authenticate'}
           </button>
         </div>
