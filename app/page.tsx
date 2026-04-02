@@ -682,62 +682,65 @@ function ProfileDialog({ record, onClose }: any) {
         <title>Refugee Registration Record</title>
         <meta charset="utf-8" />
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0.5in;
-            padding: 0;
-            color: #000;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #002868;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-          }
-          .logo { max-height: 60px; }
-          .title { text-align: right; }
-          h1 { font-size: 18px; margin: 0; color: #002868; }
-          h2 { font-size: 14px; margin: 5px 0; }
-          .section { margin-bottom: 20px; break-inside: avoid; }
-          .section-title {
-            background-color: #f0f0f0;
-            padding: 5px 10px;
-            font-weight: bold;
-            border-left: 4px solid #002868;
-            margin-bottom: 10px;
-          }
-          .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-          .field { margin-bottom: 8px; }
-          .field-label { font-weight: bold; font-size: 11px; color: #555; }
-          .field-value { font-size: 12px; border-bottom: 1px solid #ccc; padding: 2px 0; }
-          .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
-          .checkbox-item { display: flex; align-items: center; gap: 5px; }
-          .photo-block { text-align: right; margin-bottom: 20px; }
-          .photo { width: 100px; height: 100px; object-fit: cover; border: 1px solid #ccc; }
-          .photo-placeholder {
-            display: inline-flex;
-            width: 100px;
-            height: 100px;
-            border: 1px dashed #ccc;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: #999;
-          }
-          .footer {
-            margin-top: 30px;
-            font-size: 10px;
-            text-align: center;
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
-          }
-          @media print {
-            body { margin: 0.2in; }
-            .no-print { display: none; }
-          }
-        </style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0.2in;              /* was 0.5in – reduces page count */
+    padding: 0;
+    color: #000;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #002868;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+  }
+  .logo { max-height: 50px; }   /* slightly smaller */
+  .title { text-align: right; }
+  h1 { font-size: 16px; margin: 0; color: #002868; }
+  h2 { font-size: 12px; margin: 5px 0; }
+  .section {
+    margin-bottom: 15px;
+    page-break-inside: avoid;   /* prevents sections from breaking across pages */
+  }
+  .section-title {
+    background-color: #f0f0f0;
+    padding: 4px 8px;
+    font-weight: bold;
+    border-left: 4px solid #002868;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .field { margin-bottom: 6px; }
+  .field-label { font-weight: bold; font-size: 10px; color: #555; }
+  .field-value { font-size: 11px; border-bottom: 1px solid #ccc; padding: 2px 0; }
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px; }
+  .checkbox-item { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+  .photo-block { text-align: right; margin-bottom: 15px; }
+  .photo { width: 80px; height: 80px; object-fit: cover; border: 1px solid #ccc; }
+  .photo-placeholder {
+    display: inline-flex;
+    width: 80px;
+    height: 80px;
+    border: 1px dashed #ccc;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    color: #999;
+  }
+  .footer {
+    margin-top: 20px;
+    font-size: 9px;
+    text-align: center;
+    border-top: 1px solid #ccc;
+    padding-top: 8px;
+  }
+  @media print {
+    body { margin: 0.1in; }
+  }
+</style>
       </head>
       <body>
         <div class="header">
