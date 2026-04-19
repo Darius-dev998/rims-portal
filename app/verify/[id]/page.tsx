@@ -9,30 +9,39 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const fetchRecord = async () => {
-      try {
-        // Fetch the refugee record by unique_id
-        const { data, error } = await supabase
-          .from('immigrants')
-          .select('*')
-          .eq('unique_id', params.id)
-          .single();
+useEffect(() => {
+  const fetchRecord = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('immigrants')
+        .select('*')
+        .eq('unique_id', params.id)
+        .single();
 
-        if (error) throw error;
-        if (!data) notFound();
-        
-        setRecord(data);
-      } catch (err: any) {
-        setError(err.message);
+      // TEMP DEBUG: Log exact error to console & UI
+      if (error) {
+        console.error('Supabase Error:', error);
+        setError(error.message); // Show exact error on screen
         setLoading(false);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
+      
+      if (!data) {
+        notFound();
+      }
+      
+      setRecord(data);
+    } catch (err: any) {
+      console.error('Unexpected Error:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchRecord();
-  }, [params.id]);
+  fetchRecord();
+}, [params.id]);
+
 
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return '—';
