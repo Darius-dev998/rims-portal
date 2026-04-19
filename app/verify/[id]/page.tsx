@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Loader2, MapPin, Calendar, User, ShieldCheck } from 'lucide-react';
+import { Loader2, ShieldCheck, Calendar, User, MapPin } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
 export default function VerifyPage({ params }: { params: { id: string } }) {
@@ -12,6 +12,7 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchRecord = async () => {
       try {
+        // Fetch the refugee record by unique_id
         const { data, error } = await supabase
           .from('immigrants')
           .select('*')
@@ -22,11 +23,9 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
         if (!data) notFound();
         
         setRecord(data);
-        
-        // Optional: Log the scan for audit
-        // await supabase.from('verification_logs').insert({ unique_id: params.id });
       } catch (err: any) {
         setError(err.message);
+        setLoading(false);
       } finally {
         setLoading(false);
       }
@@ -42,6 +41,7 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
     });
   };
 
+  // Loading State
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6">
@@ -51,6 +51,7 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
     );
   }
 
+  // Error State
   if (error || !record) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center">
@@ -58,22 +59,23 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
           <ShieldCheck className="w-12 h-12 text-red-500" />
         </div>
         <h1 className="text-2xl font-black text-red-600 mb-2">Invalid Record</h1>
-        <p className="text-slate-500">The registration ID {params.id} could not be verified.</p>
+        <p className="text-slate-500">The registration ID <span className="font-bold">{params.id}</span> could not be verified.</p>
       </div>
     );
   }
 
+  // Success State: Verification Card
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center p-4 sm:p-8">
-      {/* Card */}
+      {/* Card Container */}
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
         
         {/* Header */}
         <div className="bg-[#002868] p-6 text-center text-white">
-          <div className="flex justify-center gap-2 mb-4">
-             {/* Logos would go here if needed, keeping it simple for mobile */}
-             <img src="/imm_badge.png" alt="Immigration badge" className="h-10 w-auto" />
-             <img src="/nid_logo.png" alt="National ID logo" className="h-10 w-auto" />
+          <div className="flex justify-center gap-3 mb-4">
+             <img src="/imm_badge.png" className="h-10 w-auto" alt="Badge" />
+             <img src="/nid_logo.png" className="h-10 w-auto" alt="NID" />
+             <img src="/ref_logo.png" className="h-10 w-auto" alt="LRRRC" />
           </div>
           <h1 className="text-xl font-black uppercase tracking-wider">Registration Verified</h1>
           <p className="text-[#FFC72C] text-xs font-bold mt-1 uppercase tracking-widest">Republic of Liberia</p>
@@ -84,11 +86,7 @@ export default function VerifyPage({ params }: { params: { id: string } }) {
           {/* Photo & ID */}
           <div className="flex flex-col items-center">
             {record.remote_photo_url ? (
-              <img
-                src={record.remote_photo_url}
-                alt={`${record.first_name} ${record.last_name}`}
-                className="w-24 h-24 rounded-full object-cover border-4 border-[#FFC72C] shadow-lg mb-3"
-              />
+              <img src={record.remote_photo_url} className="w-24 h-24 rounded-full object-cover border-4 border-[#FFC72C] shadow-lg mb-3" alt="Photo" />
             ) : (
               <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xs mb-3">No Photo</div>
             )}
