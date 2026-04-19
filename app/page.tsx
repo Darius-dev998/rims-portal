@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useId } from 'react';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 import {
@@ -13,6 +13,7 @@ import {
   DISTRICTS_BY_COUNTY, PROGRAM_TYPE_OPTIONS, CATEGORY_OPTIONS,
   TRAVEL_DOC_OPTIONS, ALL_NATIONALITIES, ALL_DISTRICTS
 } from '@/lib/constants';
+import QRCode from 'qrcode';
 
 export default function CommandPortal() {
   const [session, setSession] = useState<any>(null);
@@ -482,7 +483,7 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
                 <p className="text-[#FFC72C] font-black text-xs sm:text-sm uppercase tracking-widest mb-2">Forensic GPS</p>
                 <h3 className="text-xl sm:text-3xl font-black italic tracking-tighter">{draft.lat ? `${draft.lat.toFixed(6)}, ${draft.lng?.toFixed(6)}` : 'DISCONNECTED'}</h3>
               </div>
-              <button onClick={() => navigator.geolocation.getCurrentPosition(p => setDraft({ ...draft, lat: p.coords.latitude, lng: p.coords.longitude }))} className="bg-lib-gold text-lib-blue p-5 sm:p-6 rounded-full shadow-2xl hover:scale-110 transition-all"><MapPin size={28} className="sm:w-8 sm:h-8" /></button>
+              <button type="button" aria-label="Get current GPS location" onClick={() => navigator.geolocation.getCurrentPosition(p => setDraft({ ...draft, lat: p.coords.latitude, lng: p.coords.longitude }))} className="bg-lib-gold text-lib-blue p-5 sm:p-6 rounded-full shadow-2xl hover:scale-110 transition-all"><MapPin size={28} className="sm:w-8 sm:h-8" /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
               <FormSelect label="Doc Type" options={TRAVEL_DOC_OPTIONS} value={draft.docType} onChange={(v: any) => setDraft({ ...draft, docType: v })} />
@@ -498,12 +499,12 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
         {step === 4 && (
           <div className="space-y-10 animate-in slide-in-from-right-4 text-center">
             <div className="max-w-sm mx-auto bg-slate-100 rounded-[4rem] overflow-hidden border-8 border-slate-50 shadow-inner relative aspect-[3/4]">
-              {draft.photo ? <img src={draft.photo} className="w-full h-full object-cover" /> : <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" onLoadedMetadata={() => videoRef.current?.play()} />}
+              {draft.photo ? <img src={draft.photo} alt="Captured refugee photo" className="w-full h-full object-cover" /> : <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" onLoadedMetadata={() => videoRef.current?.play()} />}
               <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-6">
                 {draft.photo ? (
-                  <button onClick={() => { setDraft({ ...draft, photo: null }); setTimeout(() => { navigator.mediaDevices.getUserMedia({ video: true }).then(s => { if (videoRef.current) videoRef.current.srcObject = s; }); }, 100); }} className="bg-red-600 p-5 sm:p-6 rounded-full text-white shadow-2xl hover:rotate-90 transition-all"><RefreshCw size={20} className="sm:w-6 sm:h-6" /></button>
+                  <button type="button" aria-label="Retake photo" onClick={() => { setDraft({ ...draft, photo: null }); setTimeout(() => { navigator.mediaDevices.getUserMedia({ video: true }).then(s => { if (videoRef.current) videoRef.current.srcObject = s; }); }, 100); }} className="bg-red-600 p-5 sm:p-6 rounded-full text-white shadow-2xl hover:rotate-90 transition-all"><RefreshCw size={20} className="sm:w-6 sm:h-6" /></button>
                 ) : (
-                  <button onClick={() => {
+                  <button type="button" aria-label="Capture photo" onClick={() => {
                     const ctx = canvasRef.current?.getContext('2d');
                     if (canvasRef.current && videoRef.current) {
                       canvasRef.current.width = 400; canvasRef.current.height = 533;
@@ -529,7 +530,7 @@ function EnrollmentWizard({ step, setStep, draft, setDraft, onCancel, onFinalize
   );
 }
 
-// ── PROFILE FORM (FIXED PDF DOWNLOAD & VERCEL SAFE) ──
+// ── PROFILE FORM (WITH QR CODE AT BOTTOM) ──
 function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }) {
   const formatDate = (timestamp: number | null): string => {
     if (!timestamp) return '—';
@@ -545,7 +546,7 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
   const handleDownloadPDF = async () => {
     const toastId = toast.loading('Generating official PDF record...');
     try {
-      // 1. Photo fetch as Base64 (Essential for PDF generation)
+      // 1. Photo fetch as Base64
       let photoBase64 = '';
       if (record.remote_photo_url) {
         try {
@@ -561,60 +562,67 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
         }
       }
 
-      // 2. Load html2pdf dynamically to avoid build/SSR issues on Vercel
+      // 2. Generate QR Code (small size - same as photo)
+      const verificationUrl = `${window.location.origin}/verify/${record.unique_id}`;
+      const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+        width: 110,
+        margin: 1,
+        color: { dark: '#002868', light: '#ffffff' }
+      });
+
+      // 3. Load html2pdf
       // @ts-ignore
       const html2pdfModule = await import('html2pdf.js');
       const html2pdf = html2pdfModule.default || html2pdfModule;
 
-      // 3. Create PDF Template (Styled for 1 Page)
+      // 4. Create PDF Template
       const element = document.createElement('div');
       element.style.padding = "30px";
       element.style.background = "white";
       element.style.color = "#333";
       element.style.width = "750px";
 
-      // Section helper
       const pdfSection = (title: string, fields: [string, any][]) => `
-         <div style="margin-bottom: 20px; page-break-inside: avoid; ">
-           <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px; ">${title}</div>
-           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 5px; ">
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+          <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px;">${title}</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 5px;">
             ${fields.map(([label, value]) => `
-               <div style="margin-bottom: 5px; ">
-                 <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; ">${label}</div>
-                 <div style="font-size: 11px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; min-height: 14px; ">${value || '—'}</div>
-               </div>
+              <div style="margin-bottom: 5px;">
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">${label}</div>
+                <div style="font-size: 11px; color: #1e293b; font-weight: 600; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; min-height: 14px;">${value || '—'}</div>
+              </div>
             `).join('')}
-           </div>
-         </div>
+          </div>
+        </div>
       `;
 
       element.innerHTML = `
-         <div style="font-family: Arial, sans-serif; ">
-           <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #002868; padding-bottom: 10px; margin-bottom: 20px; ">
-             <div style="display: flex; gap: 15px; align-items: center;">
-               <img src="${window.location.origin}/imm_badge.png" style="height: 50px;" />
-               <img src="${window.location.origin}/nid_logo.png" style="height: 50px;" />
-               <img src="${window.location.origin}/ref_logo.png" style="height: 50px;" />
-             </div>
-             <div style="text-align: right; ">
-               <h1 style="margin: 0; color: #002868; font-size: 16px; font-weight: 900; text-transform: uppercase; ">Refugee Immigration Management System</h1>
-               <h2 style="margin: 3px 0 0; font-size: 10px; color: #475569; font-weight: bold; ">Republic of Liberia – Official Registration Record</h2>
-             </div>
-           </div>
+        <div style="font-family: Arial, sans-serif;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #002868; padding-bottom: 10px; margin-bottom: 20px;">
+            <div style="display: flex; gap: 15px; align-items: center;">
+              <img src="${window.location.origin}/imm_badge.png" style="height: 50px;" />
+              <img src="${window.location.origin}/nid_logo.png" style="height: 50px;" />
+              <img src="${window.location.origin}/ref_logo.png" style="height: 50px;" />
+            </div>
+            <div style="text-align: right;">
+              <h1 style="margin: 0; color: #002868; font-size: 16px; font-weight: 900; text-transform: uppercase;">Refugee Immigration Management System</h1>
+              <h2 style="margin: 3px 0 0; font-size: 10px; color: #475569; font-weight: bold;">Republic of Liberia – Official Registration Record</h2>
+            </div>
+          </div>
 
-           <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 30px; ">
-             <div style="flex: 1; ">
-               <h3 style="font-size: 22px; margin: 0 0 10px; color: #0f172a; font-weight: 900; text-transform: uppercase; ">Refugee Registration Form</h3>
-               <div style="font-size: 10px; color: #64748b; margin-bottom: 5px; "><strong>Unique ID: </strong>  <span style="color: #002868; ">${record.unique_id || '—'}</span> </div>
-               <div style="font-size: 10px; color: #64748b; "><strong>Generated On: </strong> ${new Date().toLocaleString()}</div>
-             </div>
-             <div>
-              ${photoBase64
-          ? `<img src="${photoBase64}" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #f1f5f9; border-radius: 8px; "/>`
-          : `<div style="width: 110px; height: 110px; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px; ">No Photo</div>`
-        }
-             </div>
-           </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 30px;">
+            <div style="flex: 1;">
+              <h3 style="font-size: 22px; margin: 0 0 10px; color: #0f172a; font-weight: 900; text-transform: uppercase;">Refugee Registration Form</h3>
+              <div style="font-size: 10px; color: #64748b; margin-bottom: 5px;"><strong>Unique ID:</strong> <span style="color: #002868;">${record.unique_id || '—'}</span></div>
+              <div style="font-size: 10px; color: #64748b;"><strong>Generated On:</strong> ${new Date().toLocaleString()}</div>
+            </div>
+            <div>
+              ${photoBase64 
+                ? `<img src="${photoBase64}" style="width: 110px; height: 110px; object-fit: cover; border: 3px solid #f1f5f9; border-radius: 8px;"/>` 
+                : `<div style="width: 110px; height: 110px; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 10px;">No Photo</div>`
+              }
+            </div>
+          </div>
 
           ${pdfSection("Classification", [
             ["Program Type", record.program_type],
@@ -644,26 +652,33 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
             ["Date of Expiry", formatDate(record.date_of_expiry)]
           ])}
 
-           <div style="margin-bottom: 20px; ">
-             <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px; ">Assistance & Migration</div>
-             <div style="padding: 0 5px; ">
-               <div style="margin-bottom: 10px; ">
-                 <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; ">Relief Assistance Provided</div>
-                 <div style="font-size: 11px; color: #1e293b; ">${record.relief_assistance || '—'}</div>
-               </div>
-               <div>
-                 <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; ">Reason for Migration</div>
-                 <div style="font-size: 11px; color: #1e293b; line-height: 1.4; ">${record.reason_for_migration || '—'}</div>
-               </div>
-             </div>
-           </div>
+          <div style="margin-bottom: 20px;">
+            <div style="background: #f1f5f9; padding: 6px 12px; font-weight: 900; font-size: 11px; color: #002868; text-transform: uppercase; border-left: 4px solid #FFC72C; margin-bottom: 10px;">Assistance & Migration</div>
+            <div style="padding: 0 5px;">
+              <div style="margin-bottom: 10px;">
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">Relief Assistance Provided</div>
+                <div style="font-size: 11px; color: #1e293b;">${record.relief_assistance || '—'}</div>
+              </div>
+              <div>
+                <div style="font-size: 8px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 2px;">Reason for Migration</div>
+                <div style="font-size: 11px; color: #1e293b; line-height: 1.4;">${record.reason_for_migration || '—'}</div>
+              </div>
+            </div>
+          </div>
 
-           <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; ">
-             <div style="font-size: 9px; color: #94a3b8; font-weight: bold; ">Agent ID: ${record.registered_by_agent_id || '—'}</div>
-             <div style="font-size: 10px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; ">Official RIMS Record</div>
-             <div style="font-size: 9px; color: #94a3b8; font-weight: bold; ">Date: ${formatDate(record.registration_timestamp)}</div>
-           </div>
-         </div>
+          <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Agent ID: ${record.registered_by_agent_id || '—'}</div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;">Official RIMS Record</div>
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">Date: ${formatDate(record.registration_timestamp)}</div>
+          </div>
+
+          <!-- QR CODE SECTION - MOVED TO BOTTOM -->
+          <div style="text-align: center; margin: 20px 0 0 0; padding: 15px; background: #f9f9f9; border: 1px dashed #ccc; border-radius: 8px; page-break-inside: avoid;">
+            <img src="${qrDataUrl}" style="width: 110px; height: 110px; margin: 0 auto; display: block;" />
+            <div style="font-size: 8px; color: #666; margin-top: 8px; font-weight: bold; text-transform: uppercase;">Scan to Verify Registration</div>
+            <div style="font-size: 7px; color: #999; word-break: break-all; margin-top: 4px;">${verificationUrl}</div>
+          </div>
+        </div>
       `;
 
       const opt = {
@@ -675,11 +690,11 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
       };
 
       await html2pdf().from(element).set(opt).save();
-      toast.success('PDF downloaded successfully!', { id: toastId });
+      toast.success('PDF downloaded successfully with QR code!', { id: toastId });
 
     } catch (err) {
       console.error('PDF Error:', err);
-      toast.error('Failed to generate PDF. Is html2pdf.js installed?', { id: toastId });
+      toast.error('Failed to generate PDF.', { id: toastId });
     }
   };
 
@@ -691,7 +706,6 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* ── HEADER WITH 3 LOGOS ── */}
         <div className="bg-[#002868] text-white p-4 sm:p-6 flex items-center justify-between border-b-4 border-[#FFC72C]">
           <div className="flex items-center gap-3">
             <img src="/imm_badge.png" alt="Badge" className="h-10 sm:h-12 w-auto" />
@@ -702,7 +716,7 @@ function ProfileDialog({ record, onClose }: { record: any; onClose: () => void }
               <p className="text-[10px] sm:text-xs text-[#FFC72C] font-bold">Republic of Liberia • Official RIMS Output</p>
             </div>
           </div>
-          <button onClick={onClose} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors">
+          <button type="button" aria-label="Close" onClick={onClose} className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition-colors">
             <X size={20} />
           </button>
         </div>
@@ -833,11 +847,19 @@ function ActionTile({ title, desc, icon, color, onClick }: any) {
 function SmartSearch({ label, options, value, onChange }: any) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  const id = useId();
   const filtered = useMemo(() => options.filter((o: string) => o.toLowerCase().includes(search.toLowerCase())), [search, options]);
   return (
     <div className="flex flex-col gap-3 relative">
-      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">{label}</label>
-      <input value={value || search} onFocus={() => setOpen(true)} onChange={(e) => setSearch(e.target.value)} placeholder={`Search ${label}...`} className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base" />
+      <label htmlFor={id} className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest ml-2">{label}</label>
+      <input
+        id={id}
+        value={value || search}
+        onFocus={() => setOpen(true)}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder={`Search ${label}...`}
+        className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base"
+      />
       {open && (
         <div className="absolute top-[100%] left-0 right-0 bg-white shadow-2xl rounded-2xl z-[60] max-h-60 overflow-y-auto border border-slate-100 mt-2 p-2">
           {filtered.map((o: string) => (
@@ -850,20 +872,29 @@ function SmartSearch({ label, options, value, onChange }: any) {
 }
 
 function FormInput({ label, value, onChange, type = "text" }: any) {
+  const id = useId();
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
-      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner" />
+      <label htmlFor={id} className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
+      <input
+        id={id}
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={label}
+        className="bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base shadow-inner"
+      />
     </div>
   );
 }
 
 function FormSelect({ label, options, value, onChange, disabled }: any) {
+  const id = useId();
   return (
     <div className="flex flex-col gap-2 sm:gap-3">
-      <label className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
+      <label htmlFor={id} className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-[0.2em] ml-2">{label}</label>
       <div className="relative">
-        <select disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base appearance-none cursor-pointer disabled:opacity-30 shadow-inner">
+        <select id={id} disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-slate-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl font-black text-slate-800 outline-none ring-2 ring-slate-100 focus:ring-8 focus:ring-[#002868]/5 transition-all text-sm sm:text-base appearance-none cursor-pointer disabled:opacity-30 shadow-inner">
           <option value="">Select {label}</option>
           {options.map((o: string) => <option key={o} value={o}>{o}</option>)}
         </select>
@@ -873,7 +904,6 @@ function FormSelect({ label, options, value, onChange, disabled }: any) {
   );
 }
 
-// ── FIXED LOGIN SCREEN (Compact, Low-Opacity, Professional) ──
 function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -888,7 +918,6 @@ function LoginScreen() {
 
   return (
     <div className="relative min-h-screen bg-[#002868] flex items-center justify-center p-4 overflow-hidden">
-      {/* 1. Background Image - Unchanged */}
       <div className="absolute inset-0 z-0 flex items-center justify-center">
         <img
           src="/login_bg.png"
@@ -897,10 +926,8 @@ function LoginScreen() {
         />
       </div>
       
-      {/* 2. Subtle Overlay - Minimal interference */}
       <div className="absolute inset-0 bg-black/10 z-10" />
 
-      {/* 3. Compact, Low-Opacity Login Card */}
       <div className="relative z-20 w-full max-w-xs bg-black/20 backdrop-blur-sm border border-white/10 shadow-xl rounded-xl sm:rounded-2xl p-4 sm:p-6 text-center">
         <img src="/imm_badge.png" alt="Immigration Badge" className="h-10 sm:h-12 mx-auto mb-3 drop-shadow-lg" />
         <h2 className="text-white text-lg sm:text-xl font-black uppercase tracking-tight mb-1 drop-shadow-md">RIMS PORTAL</h2>
